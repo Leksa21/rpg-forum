@@ -7,17 +7,15 @@ export default function Register() {
   const [form, setForm]       = useState({ username: '', email: '', password: '' });
   const [error, setError]     = useState('');
   const [loading, setLoading] = useState(false);
-
   const { register } = useAuth();
   const navigate     = useNavigate();
 
   const handleChange = (e) =>
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+    setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
     if (!form.username || !form.email || !form.password) {
       setError('All fields are required.');
       return;
@@ -26,7 +24,6 @@ export default function Register() {
       setError('Password must be at least 6 characters.');
       return;
     }
-
     setLoading(true);
     try {
       await register(form.username, form.email, form.password);
@@ -39,23 +36,37 @@ export default function Register() {
   };
 
   return (
-    <>
+    <div className="auth-split">
       <BgScene />
-      <div className="page-center">
-        <div className="card">
-          <div className="crest">
-            <div className="crest-icon">⚔️</div>
-            <h1>RPG Forum</h1>
-            <p>Begin your legend</p>
+
+      <aside className="auth-lore">
+        <div className="auth-lore-inner">
+          <div className="auth-lore-crest">🗡</div>
+          <h1 className="auth-lore-title">RPG Forum</h1>
+          <p className="auth-lore-tagline">Carve your name into<br />the annals of history</p>
+          <div className="auth-lore-rule" />
+          <p className="auth-lore-body">
+            Every legend begins with a single choice. Step forward, traveller,
+            and claim your place among heroes and villains alike.
+          </p>
+          <div className="auth-lore-glyphs">
+            <span>⚔</span><span>🛡</span><span>📜</span><span>🔥</span>
           </div>
+        </div>
+        <div className="auth-lore-glow" />
+      </aside>
 
-          <div className="divider">Create Account</div>
+      <main className="auth-form-side">
+        <div className="auth-form-inner">
+          <div className="auth-form-eyebrow">New Arrival</div>
+          <h2 className="auth-form-title">Begin Your Legend</h2>
+          <p className="auth-form-sub">Create your account and enter the realm</p>
 
-          {error && <div className="alert error visible">{error}</div>}
+          {error && <div className="auth-alert auth-alert-error">{error}</div>}
 
           <form onSubmit={handleSubmit} noValidate>
-            <div className="form-group">
-              <label htmlFor="username">Hero Name (Username)</label>
+            <div className="auth-field">
+              <label htmlFor="username">Username</label>
               <input
                 type="text"
                 id="username"
@@ -66,8 +77,8 @@ export default function Register() {
                 autoComplete="username"
               />
             </div>
-            <div className="form-group">
-              <label htmlFor="email">Scroll Address (Email)</label>
+            <div className="auth-field">
+              <label htmlFor="email">Email</label>
               <input
                 type="email"
                 id="email"
@@ -78,8 +89,8 @@ export default function Register() {
                 autoComplete="email"
               />
             </div>
-            <div className="form-group">
-              <label htmlFor="password">Secret Passphrase</label>
+            <div className="auth-field">
+              <label htmlFor="password">Password</label>
               <input
                 type="password"
                 id="password"
@@ -90,17 +101,17 @@ export default function Register() {
                 autoComplete="new-password"
               />
             </div>
-
-            <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? 'Entering the realm...' : 'Begin Your Legend'}
+            <button type="submit" className="auth-submit-btn" disabled={loading}>
+              {loading ? 'Entering the realm…' : 'Forge Your Account'}
             </button>
           </form>
 
-          <div className="form-footer">
-            Already have an account? <Link to="/login">Return to your realm</Link>
+          <div className="auth-switch">
+            Already a legend?{' '}
+            <Link to="/login">Return to your realm</Link>
           </div>
         </div>
-      </div>
-    </>
+      </main>
+    </div>
   );
 }
