@@ -73,10 +73,18 @@ export function AuthProvider({ children }) {
     return data.data;
   };
 
+  const refreshCharacter = async () => {
+    if (!token) return;
+    try {
+      const data = await get('/api/characters/me', token);
+      setCharacter(data.data);
+    } catch {}
+  };
+
   return (
     <AuthContext.Provider value={{
       user, character, token, isLoading,
-      login, register, logout, createCharacter, setupCharacter,
+      login, register, logout, createCharacter, setupCharacter, refreshCharacter,
     }}>
       {children}
     </AuthContext.Provider>

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { get } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
+import { useTravel } from '../hooks/useTravel';
 import BgScene from '../components/layout/BgScene';
 import Topbar from '../components/layout/Topbar';
 
@@ -12,8 +14,16 @@ const DANGER_CONFIG = {
   deadly: { label: 'Deadly', color: '#c0392b' },
 };
 
+function toId(v) {
+  if (!v) return null;
+  if (typeof v === 'object' && v._id) return v._id.toString();
+  return v.toString();
+}
+
 export default function WorldAreas() {
   const navigate = useNavigate();
+  const { token, character, refreshCharacter } = useAuth();
+  const { travel } = useTravel(token, refreshCharacter);
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -44,10 +54,15 @@ export default function WorldAreas() {
             : <div className="wa-grid">
                 {locations.map(loc => {
                   const danger = DANGER_CONFIG[loc.dangerLevel] ?? DANGER_CONFIG.safe;
+                  const locId = loc._id.toString();
+                  const currentLocId = toId(character?.currentLocation);
+                  const isHere = currentLocId === locId
+                    || (currentLocId === null && loc.isStartingLocation);
+                  const isTraveling = travel?.status === 'traveling' && toId(travel?.to) === locId;
                   return (
                     <button
                       key={loc._id}
-                      className="wa-card"
+                      className={`wa-card ${isHere ? 'wa-card-here' : ''}`}
                       onClick={() => navigate(`/world/areas/${loc._id}`)}
                     >
                       <div
@@ -61,6 +76,8 @@ export default function WorldAreas() {
                         >
                           {danger.label}
                         </span>
+                        {isHere && <span className="wa-here-badge">📍 Here</span>}
+                        {isTraveling && <span className="wa-traveling-badge">🚶 Traveling</span>}
                       </div>
 
                       <div

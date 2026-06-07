@@ -2,7 +2,8 @@ const Travel = require('../models/Travel');
 const Character = require('../models/Character');
 const Location = require('../models/Location');
 
-const DANGER_DURATION = { safe: 15, low: 30, medium: 60, high: 120, deadly: 240 };
+// durations in seconds
+const DANGER_DURATION = { safe: 30, low: 60, medium: 120, high: 300, deadly: 600 };
 
 const startTravel = async (req, res) => {
   try {
@@ -36,15 +37,15 @@ const startTravel = async (req, res) => {
       return res.status(400).json({ success: false, error: 'No route to that location' });
     }
 
-    const durationMinutes = DANGER_DURATION[destination.dangerLevel] || 30;
-    const arrivalTime = new Date(Date.now() + durationMinutes * 60 * 1000);
+    const durationSecs = DANGER_DURATION[destination.dangerLevel] || 60;
+    const arrivalTime = new Date(Date.now() + durationSecs * 1000);
 
     const travel = await Travel.create({
       character: character._id,
       user: req.userId,
       from: fromLocation._id,
       to: destination._id,
-      durationMinutes,
+      durationMinutes: durationSecs,
       arrivalTime,
     });
 

@@ -2556,3 +2556,140 @@ html, body {
   }
   .pm-cell-player { grid-column: 1 / -1; }
 }
+
+/* ─── TRAVEL PANEL ─── */
+.tp-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 0.83rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+/* You are here */
+.tp-here {
+  background: rgba(39, 174, 96, 0.06);
+  border-color: rgba(39, 174, 96, 0.3);
+  color: var(--green);
+}
+.tp-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 0 rgba(39,174,96,0.6);
+  animation: tp-pulse 2s infinite;
+  flex-shrink: 0;
+}
+@keyframes tp-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(39,174,96,0.6); }
+  70%  { box-shadow: 0 0 0 6px rgba(39,174,96,0); }
+  100% { box-shadow: 0 0 0 0 rgba(39,174,96,0); }
+}
+.tp-here-text { font-family: 'Cinzel', serif; font-size: 0.82rem; }
+
+/* Traveling here */
+.tp-traveling {
+  background: rgba(201, 168, 76, 0.06);
+  border-color: rgba(201, 168, 76, 0.3);
+}
+.tp-travel-glyph { font-size: 1.1rem; }
+.tp-traveling-label { flex: 1; color: var(--text-soft); }
+.tp-countdown {
+  font-family: 'Courier New', monospace;
+  color: var(--gold);
+  font-size: 1rem;
+}
+.tp-countdown-sm { font-size: 0.82rem; color: var(--text-muted); }
+.tp-cancel-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 5px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s;
+}
+.tp-cancel-btn:hover { border-color: var(--red); color: var(--red); }
+
+/* Traveling elsewhere */
+.tp-elsewhere {
+  background: rgba(255,255,255,0.02);
+  color: var(--text-muted);
+}
+
+/* Available - can travel */
+.tp-available {
+  background: rgba(255,255,255,0.02);
+  justify-content: space-between;
+}
+.tp-avail-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-muted);
+}
+.tp-danger-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.tp-danger-text { font-size: 0.78rem; }
+.tp-sep { color: var(--border); }
+.tp-time-label { font-size: 0.78rem; }
+.tp-avail-action {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.tp-err {
+  font-size: 0.75rem;
+  color: var(--red);
+}
+.tp-go-btn {
+  background: rgba(201,168,76,0.08);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  font-size: 0.8rem;
+  padding: 0.35rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.tp-go-btn:hover { background: rgba(201,168,76,0.15); }
+.tp-go-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* WorldAreas card status badges */
+.wa-here-badge,
+.wa-traveling-badge {
+  position: absolute;
+  bottom: 0.6rem;
+  right: 0.6rem;
+  font-size: 0.65rem;
+  font-family: 'Cinzel', serif;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid;
+}
+.wa-here-badge {
+  color: var(--green);
+  border-color: var(--green);
+  background: rgba(39,174,96,0.12);
+}
+.wa-traveling-badge {
+  color: var(--gold);
+  border-color: var(--gold-dim);
+  background: rgba(201,168,76,0.12);
+}
+.wa-card-here {
+  border-color: rgba(39,174,96,0.35) !important;
+}

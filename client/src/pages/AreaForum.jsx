@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { get } from '../lib/api';
 import BgScene from '../components/layout/BgScene';
 import Topbar from '../components/layout/Topbar';
+import TravelPanel from '../components/travel/TravelPanel';
 
 const CLASS_COLORS = {
   Warrior: '#e74c3c', Mage: '#3498db', Rogue: '#f39c12',
@@ -87,6 +88,12 @@ export default function AreaForum() {
           </div>
 
           <div className="af-body">
+            <TravelPanel
+              locationId={id}
+              dangerLevel={location.dangerLevel}
+              isStartingLocation={location.isStartingLocation}
+            />
+
             <div className="af-posts-header">
               <span className="af-posts-count">{total} {total === 1 ? 'post' : 'posts'}</span>
               <button
