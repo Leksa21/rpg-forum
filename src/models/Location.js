@@ -25,6 +25,10 @@ const locationSchema = new mongoose.Schema(
     icon: { type: String, default: '🏘️' },
     isStartingLocation: { type: Boolean, default: false },
     population: { type: Number, default: 0 },
+    theme: {
+      gradient:    { type: String, default: 'linear-gradient(160deg, #0a0a14 0%, #141428 100%)' },
+      accentColor: { type: String, default: '#c9a84c' },
+    },
   },
   { timestamps: true }
 );

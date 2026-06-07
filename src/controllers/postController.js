@@ -3,8 +3,10 @@ const Comment = require('../models/Comment');
 
 const getPosts = async (req, res) => {
   try {
-    const { category, page = 1, limit = 20 } = req.query;
-    const filter = category ? { category } : {};
+    const { category, location, page = 1, limit = 20 } = req.query;
+    const filter = {};
+    if (category) filter.category = category;
+    if (location) filter.location = location;
     const skip = (Number(page) - 1) * Number(limit);
 
     const [posts, total] = await Promise.all([
@@ -49,7 +51,7 @@ const getPost = async (req, res) => {
 
 const createPost = async (req, res) => {
   try {
-    const { title, content, category, tags, subLocation } = req.body;
+    const { title, content, category, tags, subLocation, location } = req.body;
 
     if (!title || !content || !category) {
       return res.status(400).json({ success: false, error: 'Title, content, and category are required' });
@@ -69,6 +71,7 @@ const createPost = async (req, res) => {
       author: req.userId,
       character: character._id,
       subLocation: subLocation || null,
+      location: location || null,
     });
 
     const populated = await post.populate([

@@ -53,6 +53,11 @@ const postSchema = new mongoose.Schema(
       ref: 'SubLocation',
       default: null,
     },
+    location: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Location',
+      default: null,
+    },
   },
   {
     timestamps: true,

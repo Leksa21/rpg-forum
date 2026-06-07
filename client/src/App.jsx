@@ -13,6 +13,8 @@ import CreatePost        from './pages/CreatePost';
 import CharacterProfile  from './pages/CharacterProfile';
 import QuestBoard        from './pages/QuestBoard';
 import AdminPanel        from './pages/AdminPanel';
+import WorldAreas        from './pages/WorldAreas';
+import AreaForum         from './pages/AreaForum';
 import LoadingScreen     from './components/layout/LoadingScreen';
 
 // Redirects based on full auth + character state
@@ -79,6 +81,8 @@ export default function App() {
           <Route path="/character"         element={<DashboardRoute><CharacterProfile /></DashboardRoute>} />
           <Route path="/quests"            element={<DashboardRoute><QuestBoard /></DashboardRoute>} />
           <Route path="/admin"             element={<DashboardRoute><AdminPanel /></DashboardRoute>} />
+          <Route path="/world/areas"       element={<DashboardRoute><WorldAreas /></DashboardRoute>} />
+          <Route path="/world/areas/:id"   element={<DashboardRoute><AreaForum /></DashboardRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

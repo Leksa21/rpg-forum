@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { post } from '../lib/api';
 import BgScene from '../components/layout/BgScene';
@@ -10,6 +10,9 @@ const CATEGORIES = ['General', 'Quests', 'Lore', 'Characters', 'Trading', 'Annou
 export default function CreatePost() {
   const { token, character } = useAuth();
   const navigate = useNavigate();
+  const navState = useLocation().state || {};
+  const locationId   = navState.locationId   || null;
+  const locationName = navState.locationName || null;
 
   const [title, setTitle]       = useState('');
   const [category, setCategory] = useState('General');
@@ -31,7 +34,9 @@ export default function CreatePost() {
 
     setSubmitting(true);
     try {
-      const res = await post('/api/posts', { title: title.trim(), content: content.trim(), category, tags: tagList }, token);
+      const body = { title: title.trim(), content: content.trim(), category, tags: tagList };
+      if (locationId) body.location = locationId;
+      const res = await post('/api/posts', body, token);
       navigate(`/forum/${res.data._id}`);
     } catch (err) {
       setError(err.message);
@@ -46,11 +51,19 @@ export default function CreatePost() {
         <Topbar />
         <main className="dash-main">
 
-          <Link to="/forum" className="post-back-link">← Back to Forum</Link>
+          {locationId
+            ? <button className="post-back-link" onClick={() => navigate(`/world/areas/${locationId}`)}>← Back to {locationName}</button>
+            : <Link to="/forum" className="post-back-link">← Back to Forum</Link>
+          }
 
           <div className="create-post-wrap">
             <header className="create-post-header">
               <h1 className="forum-title">New Post</h1>
+              {locationName && (
+                <div className="create-post-location">
+                  📍 Writing in <span className="create-post-location-name">{locationName}</span>
+                </div>
+              )}
               {character && (
                 <div className="create-post-as">
                   Writing as <span className="create-post-char">

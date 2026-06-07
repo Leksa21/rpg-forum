@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { get, post } from '../lib/api';
+import { get, post, put } from '../lib/api';
 import BgScene from '../components/layout/BgScene';
 import Topbar from '../components/layout/Topbar';
 
-const TABS = ['Quests', 'Locations', 'Seed World'];
+const TABS = ['Players', 'Quests', 'Locations', 'Seed World'];
 
 export default function AdminPanel() {
   const { token, user } = useAuth();
@@ -38,13 +38,166 @@ export default function AdminPanel() {
             ))}
           </div>
 
-          {tab === 0 && <QuestManager token={token} />}
-          {tab === 1 && <LocationManager token={token} />}
-          {tab === 2 && <SeedPanel token={token} />}
+          {tab === 0 && <PlayersManager token={token} user={user} />}
+          {tab === 1 && <QuestManager token={token} />}
+          {tab === 2 && <LocationManager token={token} />}
+          {tab === 3 && <SeedPanel token={token} />}
 
         </main>
       </div>
     </>
+  );
+}
+
+const ROLE_RANK   = { member: 0, moderator: 1, admin: 2, head_admin: 3 };
+const ROLE_LABELS = { member: '👤 Member', moderator: '🛡 Mod', admin: '⚙ Admin', head_admin: '👑 Head Admin' };
+
+function PlayersManager({ token, user }) {
+  const [players, setPlayers]   = useState([]);
+  const [total, setTotal]       = useState(0);
+  const [page, setPage]         = useState(1);
+  const [search, setSearch]     = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [loading, setLoading]   = useState(true);
+  const [msg, setMsg]           = useState('');
+  const LIMIT = 20;
+
+  useEffect(() => {
+    setLoading(true);
+    const params = new URLSearchParams({ page, limit: LIMIT, search });
+    get(`/api/admin/users?${params}`, token)
+      .then(r => { setPlayers(r.data); setTotal(r.meta.total); })
+      .catch(e => setMsg(e.message))
+      .finally(() => setLoading(false));
+  }, [page, search, token]);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    setPage(1);
+    setSearch(searchInput);
+  };
+
+  const handleRoleChange = async (playerId, role) => {
+    try {
+      const res = await put(`/api/admin/users/${playerId}/role`, { role }, token);
+      setPlayers(prev => prev.map(p => p._id === playerId ? { ...p, role: res.data.role } : p));
+    } catch (e) {
+      setMsg(e.message);
+    }
+  };
+
+  const handleBanToggle = async (playerId) => {
+    try {
+      const res = await put(`/api/admin/users/${playerId}/ban`, {}, token);
+      setPlayers(prev => prev.map(p => p._id === playerId ? { ...p, isActive: res.data.isActive } : p));
+    } catch (e) {
+      setMsg(e.message);
+    }
+  };
+
+  const callerRank = ROLE_RANK[user?.role] ?? 0;
+  const assignableRoles = Object.keys(ROLE_RANK).filter(r => {
+    if (user?.role === 'head_admin') return true;
+    return ROLE_RANK[r] < callerRank;
+  });
+
+  const totalPages = Math.ceil(total / LIMIT);
+
+  return (
+    <div>
+      <div className="pm-toolbar">
+        <form className="pm-search" onSubmit={handleSearch}>
+          <input
+            className="pm-search-input"
+            placeholder="Search by username or email…"
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+          />
+          <button type="submit" className="btn-primary" style={{ width: 'auto', padding: '0.4rem 1rem' }}>Search</button>
+        </form>
+        <span className="pm-count">{total} players</span>
+      </div>
+
+      {msg && <div className="alert error visible" style={{ marginBottom: '1rem' }}>{msg}</div>}
+
+      {loading
+        ? <p style={{ color: 'var(--text-muted)' }}>Loading…</p>
+        : <div className="pm-table">
+            <div className="pm-thead">
+              <span>Player</span>
+              <span>Character</span>
+              <span>Role</span>
+              <span>Status</span>
+              <span>Actions</span>
+            </div>
+            {players.map(p => {
+              const isSelf = p._id === user?._id;
+              const targetRank = ROLE_RANK[p.role] ?? 0;
+              const canEdit = !isSelf && (user?.role === 'head_admin' || targetRank < callerRank);
+
+              return (
+                <div key={p._id} className={`pm-row ${!p.isActive ? 'pm-row-banned' : ''}`}>
+                  <div className="pm-cell-player">
+                    <span className="pm-username">{p.username}</span>
+                    <span className="pm-email">{p.email}</span>
+                  </div>
+
+                  <div className="pm-cell-char">
+                    {p.activeCharacter
+                      ? <><span>{p.activeCharacter.avatar}</span> <span>{p.activeCharacter.name}</span> <span className="pm-char-meta">Lv{p.activeCharacter.level} {p.activeCharacter.class}</span></>
+                      : <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>No character</span>
+                    }
+                    {p.deadCharacterCount > 0 && <span className="pm-dead-count">💀 {p.deadCharacterCount}</span>}
+                  </div>
+
+                  <div className="pm-cell-role">
+                    {canEdit && assignableRoles.length > 0
+                      ? <select
+                          className="pm-role-select"
+                          value={p.role}
+                          onChange={e => handleRoleChange(p._id, e.target.value)}
+                        >
+                          {['member', 'moderator', 'admin', 'head_admin'].map(r => (
+                            <option key={r} value={r} disabled={!assignableRoles.includes(r) && r !== p.role}>
+                              {r.replace('_', ' ')}
+                            </option>
+                          ))}
+                        </select>
+                      : <span className="pm-role-badge" style={{ color: p.role === 'head_admin' ? 'var(--gold)' : 'var(--text-muted)' }}>
+                          {ROLE_LABELS[p.role]}
+                        </span>
+                    }
+                  </div>
+
+                  <div className="pm-cell-status">
+                    <span className={`pm-status-dot ${p.isActive ? 'pm-status-active' : 'pm-status-banned'}`} />
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{p.isActive ? 'Active' : 'Banned'}</span>
+                  </div>
+
+                  <div className="pm-cell-actions">
+                    {canEdit && (
+                      <button
+                        className={`pm-ban-btn ${p.isActive ? 'pm-ban-btn-ban' : 'pm-ban-btn-unban'}`}
+                        onClick={() => handleBanToggle(p._id)}
+                      >
+                        {p.isActive ? 'Ban' : 'Unban'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+      }
+
+      {totalPages > 1 && (
+        <div className="pm-pagination">
+          <button className="pm-page-btn" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>← Prev</button>
+          <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Page {page} / {totalPages}</span>
+          <button className="pm-page-btn" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next →</button>
+        </div>
+      )}
+    </div>
   );
 }
 
