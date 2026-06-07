@@ -29,7 +29,7 @@ app.use('/', indexRouter);
 if (process.env.NODE_ENV === 'production') {
   const clientBuild = path.join(__dirname, 'client', 'dist');
   app.use(express.static(clientBuild));
-  app.get('*', (req, res) => {
+  app.get('/{*path}', (req, res) => {
     res.sendFile(path.join(clientBuild, 'index.html'));
   });
 }
