@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 
 const EMIT_INTERVAL = 3000;
@@ -19,19 +19,33 @@ function computeCurrentMapPos(mapX, mapY, travelInfo) {
   ];
 }
 
+const CLEAR_ENCOUNTER = { active: false, opponent: null, waiting: false, result: null };
+
 export function useMapSocket(token, mapX, mapY, travelInfo, myCharId) {
   const [otherPlayers, setOtherPlayers] = useState([]);
+  const [encounter, setEncounter]       = useState(CLEAR_ENCOUNTER);
 
-  // Keep mutable refs so interval callback always has fresh values
   const travelRef = useRef(travelInfo);
   const posRef    = useRef({ mapX, mapY });
+  const socketRef = useRef(null);
   travelRef.current = travelInfo;
   posRef.current    = { mapX, mapY };
+
+  const respondToEncounter = useCallback((action) => {
+    if (!socketRef.current) return;
+    socketRef.current.emit('map:encounter:respond', { action });
+    if (action === 'flee') {
+      setEncounter(CLEAR_ENCOUNTER);
+    } else {
+      setEncounter(prev => ({ ...prev, waiting: true }));
+    }
+  }, []);
 
   useEffect(() => {
     if (!token || !myCharId) return;
 
     const socket = io('/map', { auth: { token } });
+    socketRef.current = socket;
 
     const emitPosition = () => {
       const [mx, my] = computeCurrentMapPos(
@@ -45,8 +59,16 @@ export function useMapSocket(token, mapX, mapY, travelInfo, myCharId) {
     socket.on('connect', emitPosition);
 
     socket.on('map:positions', (positions) => {
-      const others = Object.values(positions).filter(p => p.charId !== myCharId);
-      setOtherPlayers(others);
+      setOtherPlayers(Object.values(positions).filter(p => p.charId !== myCharId));
+    });
+
+    socket.on('map:encounter', ({ opponent }) => {
+      setEncounter({ active: true, opponent, waiting: false, result: null });
+    });
+
+    socket.on('map:encounter:result', ({ outcome, myAction, theirAction }) => {
+      setEncounter(prev => ({ ...prev, waiting: false, result: { outcome, myAction, theirAction } }));
+      setTimeout(() => setEncounter(CLEAR_ENCOUNTER), 4000);
     });
 
     const interval = setInterval(emitPosition, EMIT_INTERVAL);
@@ -54,8 +76,9 @@ export function useMapSocket(token, mapX, mapY, travelInfo, myCharId) {
     return () => {
       clearInterval(interval);
       socket.disconnect();
+      socketRef.current = null;
     };
   }, [token, myCharId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return otherPlayers;
+  return { otherPlayers, encounter, respondToEncounter };
 }

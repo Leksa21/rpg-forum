@@ -8,6 +8,7 @@ import { useTravel } from '../hooks/useTravel';
 import BgScene from '../components/layout/BgScene';
 import Topbar from '../components/layout/Topbar';
 import MapScene from '../components/map3d/MapScene';
+import EncounterOverlay from '../components/map3d/EncounterOverlay';
 import { getTerrainHeight } from '../components/map3d/terrainNoise';
 
 const DANGER_COLORS = {
@@ -198,7 +199,7 @@ export default function WorldMap() {
     };
   }, [travel, locations]);
 
-  const otherPlayers = useMapSocket(token, playerMapX, playerMapY, travelInfo, myCharId);
+  const { otherPlayers, encounter, respondToEncounter } = useMapSocket(token, playerMapX, playerMapY, travelInfo, myCharId);
 
   const initialCameraPos = useMemo(() => {
     if (!locations.length) return [0, 40, 55];
@@ -314,6 +315,11 @@ export default function WorldMap() {
               onTravel={startTravel}
               onCancelTravel={cancelTravel}
             />
+
+            {/* Encounter overlay */}
+            {encounter.active && (
+              <EncounterOverlay encounter={encounter} onRespond={respondToEncounter} />
+            )}
 
             {/* Controls hint */}
             <div className="wm3d-hint">
