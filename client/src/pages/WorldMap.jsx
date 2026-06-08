@@ -1,300 +1,462 @@
-import { useRef, useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Html, Stars } from '@react-three/drei';
-import * as THREE from 'three';
 import { useAuth } from '../context/AuthContext';
-import { get, post } from '../lib/api';
+import { get } from '../lib/api';
+import { useTravel } from '../hooks/useTravel';
 import BgScene from '../components/layout/BgScene';
 import Topbar from '../components/layout/Topbar';
 
-const DANGER_COLORS = { safe: '#2ecc71', low: '#a8d8a8', medium: '#f0c060', high: '#e74c3c', deadly: '#900' };
+const DANGER_COLORS = {
+  safe: '#4a9a4a', low: '#7aaa44', medium: '#d4ac0d', high: '#e07020', deadly: '#c0392b',
+};
+const DANGER_TIME = {
+  safe: '30s', low: '1 min', medium: '2 min', high: '5 min', deadly: '10 min',
+};
 
-// Terrain plane
-function Terrain() {
+function srand(x, y, s = 0) {
+  const v = Math.sin(x * 127.1 + y * 311.7 + s * 74.3) * 43758.5453;
+  return v - Math.floor(v);
+}
+
+function toId(v) {
+  if (!v) return null;
+  return typeof v === 'object' && v._id ? v._id.toString() : v?.toString() ?? null;
+}
+
+function useCountdown(arrivalTime) {
+  const [secs, setSecs] = useState(0);
+  useEffect(() => {
+    if (!arrivalTime) { setSecs(0); return; }
+    const update = () => setSecs(Math.max(0, Math.round((new Date(arrivalTime) - Date.now()) / 1000)));
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [arrivalTime]);
+  if (!arrivalTime || secs <= 0) return arrivalTime ? 'Arriving…' : '';
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return m > 0 ? `${m}:${String(s).padStart(2, '0')}` : `${s}s`;
+}
+
+// ── Terrain SVG atoms ──────────────────────────────────────────────────────
+
+function Mountain({ x, y, s = 1, o = 0.72 }) {
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-      <planeGeometry args={[40, 40, 32, 32]} />
-      <meshStandardMaterial color="#0a0d18" roughness={0.9} metalness={0.1} />
-    </mesh>
+    <g transform={`translate(${x},${y}) scale(${s})`} opacity={o}>
+      <polygon points="0,-6 -4.5,0 4.5,0" fill="#9a8070" stroke="#6a5040" strokeWidth="0.2"/>
+      <polygon points="-3,-2.5 -7,0.5 0.5,0.5" fill="#857060" stroke="#6a5040" strokeWidth="0.15"/>
+    </g>
   );
 }
 
-// Route line between two locations
-function RouteLine({ from, to }) {
-  const points = [
-    new THREE.Vector3(from[0], 0.05, from[2]),
-    new THREE.Vector3(to[0], 0.05, to[2]),
-  ];
-  const geometry = new THREE.BufferGeometry().setFromPoints(points);
+function Tree({ x, y, s = 1, o = 0.65, dark = false }) {
   return (
-    <line geometry={geometry}>
-      <lineBasicMaterial color="#c9a84c" opacity={0.25} transparent />
-    </line>
+    <g transform={`translate(${x},${y}) scale(${s})`} opacity={o}>
+      <ellipse cx="0" cy="-3" rx="3" ry="3.5"
+        fill={dark ? '#3a5030' : '#5a7848'}
+        stroke={dark ? '#2a3820' : '#3a5030'} strokeWidth="0.2"/>
+      <rect x="-0.8" y="0.3" width="1.6" height="2.5" fill={dark ? '#2a3020' : '#4a3020'}/>
+    </g>
   );
 }
 
-// Location marker pin
-function LocationPin({ location, isCurrent, isSelected, onClick }) {
-  const meshRef = useRef();
-  const glowRef = useRef();
-  const [hovered, setHovered] = useState(false);
-
-  useFrame((state) => {
-    if (!meshRef.current) return;
-    meshRef.current.position.y = 0.4 + Math.sin(state.clock.elapsedTime * 1.5 + location.x) * 0.08;
-    if (glowRef.current) {
-      glowRef.current.material.opacity = 0.15 + Math.sin(state.clock.elapsedTime * 2) * 0.1;
-    }
-  });
-
-  const color = isCurrent ? '#c9a84c' : hovered ? '#f0d080' : '#8877aa';
-  const scale = isCurrent ? 1.3 : hovered ? 1.15 : 1;
-
+function Wave({ x, y, w = 8, o = 0.55 }) {
+  const hw = w / 2;
   return (
-    <group position={[location.x, 0, location.z]}>
-      {/* Glow ring */}
-      <mesh ref={glowRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
-        <ringGeometry args={[0.35, 0.6, 32]} />
-        <meshBasicMaterial color={color} transparent opacity={0.15} />
-      </mesh>
-      {/* Pin */}
-      <mesh
-        ref={meshRef}
-        scale={[scale, scale, scale]}
-        onClick={onClick}
-        onPointerOver={() => setHovered(true)}
-        onPointerOut={() => setHovered(false)}
-        castShadow
-      >
-        <cylinderGeometry args={[0.12, 0.2, 0.5, 8]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.4} roughness={0.3} />
-      </mesh>
-      {/* Label */}
-      <Html distanceFactor={12} position={[0, 1, 0]} center>
-        <div className="wm3d-label" style={{ color: isCurrent ? '#c9a84c' : '#a89d88', fontWeight: isCurrent ? 700 : 400 }}>
-          {location.icon} {location.name}
-          {isCurrent && <span className="wm3d-here"> ●</span>}
-        </div>
-      </Html>
-    </group>
+    <path
+      d={`M${x},${y} Q${x+hw/2},${y-1.5} ${x+hw},${y} Q${x+hw*1.5},${y+1.5} ${x+w},${y}`}
+      fill="none" stroke="#7aaac0" strokeWidth="0.6" opacity={o}
+    />
   );
 }
 
-function Scene({ locations, routes, currentLocationId, onSelectLocation }) {
-  const { camera } = useThree();
-  useEffect(() => { camera.position.set(0, 18, 14); camera.lookAt(0, 0, 0); }, [camera]);
+function Dune({ x, y, o = 0.5 }) {
+  return <ellipse cx={x} cy={y} rx="6" ry="2.5" fill="#c0a055" stroke="#9a7835" strokeWidth="0.2" opacity={o}/>;
+}
 
+function SnowPatch({ x, y, o = 0.55 }) {
+  return <ellipse cx={x} cy={y} rx="5" ry="3" fill="#d8e8f0" stroke="#b0c8d8" strokeWidth="0.2" opacity={o}/>;
+}
+
+function VolcRock({ x, y, o = 0.62 }) {
   return (
-    <>
-      <ambientLight intensity={0.3} />
-      <directionalLight position={[10, 20, 10]} intensity={0.8} castShadow />
-      <pointLight position={[0, 8, 0]} intensity={0.2} color="#c9a84c" />
-      <Stars radius={60} depth={40} count={1500} factor={3} saturation={0} fade />
-      <Terrain />
-      {routes.map((r, i) => {
-        const from = locations.find(l => l._id === r[0]);
-        const to   = locations.find(l => l._id === r[1]);
-        if (!from || !to) return null;
-        return <RouteLine key={i} from={[from.x, 0, from.z]} to={[to.x, 0, to.z]} />;
-      })}
-      {locations.map(loc => (
-        <LocationPin
-          key={loc._id}
-          location={loc}
-          isCurrent={loc._id === currentLocationId}
-          onSelectLocation={onSelectLocation}
-          onClick={() => onSelectLocation(loc)}
-        />
-      ))}
-      <OrbitControls
-        enablePan={true}
-        minPolarAngle={Math.PI / 6}
-        maxPolarAngle={Math.PI / 2.2}
-        minDistance={6}
-        maxDistance={30}
-      />
-    </>
+    <polygon points={`${x},${y-5} ${x-3.5},${y+2} ${x+3.5},${y+2}`}
+      fill="#8a3820" stroke="#6a2810" strokeWidth="0.2" opacity={o}/>
   );
 }
+
+function Reed({ x, y, o = 0.6 }) {
+  return (
+    <g opacity={o}>
+      <line x1={x} y1={y+2.5} x2={x} y2={y-3.5} stroke="#4a6a3a" strokeWidth="0.5"/>
+      <ellipse cx={x} cy={y-4} rx="1" ry="1.5" fill="#5a7a4a"/>
+      <line x1={x+2} y1={y+2} x2={x+2} y2={y-3} stroke="#4a6a3a" strokeWidth="0.45"/>
+      <ellipse cx={x+2} cy={y-3.5} rx="0.9" ry="1.3" fill="#5a7a4a"/>
+    </g>
+  );
+}
+
+// ── Terrain Layer (all decorations) ──────────────────────────────────────
+
+function TerrainLayer() {
+  const elems = [];
+
+  // Terrain tints
+  elems.push(<ellipse key="tw"  cx="93" cy="62" rx="12" ry="20" fill="#7aaac0" opacity="0.14"/>);
+  elems.push(<ellipse key="ti"  cx="9"  cy="10" rx="13" ry="11" fill="#c8d8e8" opacity="0.17"/>);
+  elems.push(<ellipse key="tv"  cx="55" cy="13" rx="11" ry="9"  fill="#c06040" opacity="0.11"/>);
+  elems.push(<ellipse key="ts"  cx="28" cy="74" rx="14" ry="10" fill="#4a6a3a" opacity="0.11"/>);
+  elems.push(<ellipse key="td"  cx="79" cy="82" rx="16" ry="12" fill="#c8a060" opacity="0.14"/>);
+  elems.push(<ellipse key="tdk" cx="68" cy="26" rx="12" ry="10" fill="#2a3a20" opacity="0.13"/>);
+  elems.push(<ellipse key="tf"  cx="15" cy="66" rx="11" ry="12" fill="#4a6030" opacity="0.12"/>);
+
+  // Mountains: Stoneback + Frozen Wastes (upper-left quadrant)
+  for (let i = 0; i < 14; i++) {
+    elems.push(<Mountain key={`ml${i}`}
+      x={5 + srand(i, 0) * 24} y={4 + srand(0, i) * 38}
+      s={0.55 + srand(i, i+1) * 0.85}
+    />);
+  }
+  // Mountains: Flamecrest area (upper-center)
+  for (let i = 0; i < 7; i++) {
+    elems.push(<Mountain key={`mc${i}`}
+      x={46 + srand(i+20, 0) * 15} y={5 + srand(0, i+20) * 14}
+      s={0.5 + srand(i+20, i+21) * 0.7}
+    />);
+  }
+
+  // Trees: Ancient Forest (lower-left)
+  for (let i = 0; i < 14; i++) {
+    elems.push(<Tree key={`tl${i}`}
+      x={8 + srand(i, 3) * 16} y={57 + srand(3, i) * 22}
+      s={0.6 + srand(i+3, i) * 0.7}
+    />);
+  }
+  // Trees: Darkwood/Ashenveil (upper-right) — dark
+  for (let i = 0; i < 12; i++) {
+    elems.push(<Tree key={`td${i}`}
+      x={60 + srand(i, 4) * 15} y={16 + srand(4, i) * 20}
+      s={0.6 + srand(i+4, i) * 0.65}
+      dark
+    />);
+  }
+
+  // Water waves: coastal right
+  for (let i = 0; i < 14; i++) {
+    elems.push(<Wave key={`wv${i}`}
+      x={83 + srand(i, 5) * 14 - 3} y={46 + srand(5, i) * 32}
+      w={5 + srand(i, i+5) * 5}
+    />);
+  }
+
+  // Desert dunes (lower-right)
+  for (let i = 0; i < 16; i++) {
+    elems.push(<Dune key={`dn${i}`}
+      x={64 + srand(i, 6) * 28} y={69 + srand(6, i) * 24}
+    />);
+  }
+
+  // Snow patches (top-left)
+  for (let i = 0; i < 9; i++) {
+    elems.push(<SnowPatch key={`sn${i}`}
+      x={3 + srand(i, 7) * 18} y={3 + srand(7, i) * 18}
+    />);
+  }
+
+  // Volcanic rocks (upper-center)
+  for (let i = 0; i < 8; i++) {
+    elems.push(<VolcRock key={`vr${i}`}
+      x={47 + srand(i, 8) * 16} y={7 + srand(8, i) * 14}
+    />);
+  }
+
+  // Reeds: Shadowmere Bayou (lower-center-left)
+  for (let i = 0; i < 10; i++) {
+    elems.push(<Reed key={`rd${i}`}
+      x={20 + srand(i, 9) * 20} y={66 + srand(9, i) * 16}
+    />);
+  }
+
+  return (
+    <svg className="fm-terrain-svg" viewBox="0 0 100 100"
+      preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      {elems}
+    </svg>
+  );
+}
+
+// ── Compass Rose ──────────────────────────────────────────────────────────
+
+function CompassRose() {
+  return (
+    <div className="fm-compass">
+      <svg viewBox="-26 -30 52 60" width="84" height="84">
+        <polygon points="0,-22 -3.5,-8 3.5,-8" fill="#c9a84c"/>
+        <polygon points="0,22 -3.5,8 3.5,8" fill="#7a6050"/>
+        <polygon points="22,0 8,-3.5 8,3.5" fill="#7a6050"/>
+        <polygon points="-22,0 -8,-3.5 -8,3.5" fill="#7a6050"/>
+        <polygon points="14,-14 5,-6 7,-3" fill="#9a8868"/>
+        <polygon points="-14,-14 -5,-6 -7,-3" fill="#9a8868"/>
+        <polygon points="14,14 5,6 7,3" fill="#9a8868"/>
+        <polygon points="-14,14 -5,6 -7,3" fill="#9a8868"/>
+        <circle r="4.5" fill="#c9a84c" stroke="#7a5030" strokeWidth="0.8"/>
+        <circle r="2" fill="#4a3020"/>
+        <text y="-24" textAnchor="middle" fill="#4a3020" fontSize="7"
+          fontFamily="Cinzel, serif" fontWeight="bold">N</text>
+      </svg>
+    </div>
+  );
+}
+
+// ── Location Pin ─────────────────────────────────────────────────────────
+
+function LocationPin({ loc, isHere, isTravelDest, onClick }) {
+  const x = loc.mapCoords?.x ?? 50;
+  const y = loc.mapCoords?.y ?? 50;
+  const cls = ['fm-pin', isHere && 'fm-pin-here', isTravelDest && 'fm-pin-dest']
+    .filter(Boolean).join(' ');
+
+  return (
+    <div className={cls} style={{ left: `${x}%`, top: `${y}%` }}
+      onClick={() => onClick(loc)} title={loc.name}>
+      <div className="fm-pin-inner">
+        <span className="fm-pin-icon">{loc.icon}</span>
+        <div className="fm-pin-marker" style={{ '--pin-color': loc.theme?.accentColor || '#4a3525' }}/>
+        <span className="fm-pin-label">{loc.name}</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Travel Status Bar ─────────────────────────────────────────────────────
+
+function TravelBar({ travel, onCancel, travelLoading }) {
+  const countdown = useCountdown(travel?.arrivalTime);
+  return (
+    <div className="fm-travel-bar">
+      <span>🚶 Traveling to <strong>{travel.to?.name || '…'}</strong></span>
+      <span className="fm-tbar-countdown">{countdown}</span>
+      <button className="fm-tbar-cancel" onClick={onCancel} disabled={travelLoading}>
+        Cancel
+      </button>
+    </div>
+  );
+}
+
+// ── Location Info Panel ───────────────────────────────────────────────────
+
+function LocationPanel({ location, open, onClose, navigate, currentLocId, travel, travelLoading, onTravel, onCancelTravel }) {
+  const [travelErr, setTravelErr] = useState('');
+
+  const isHere = location
+    ? (currentLocId === null && location.isStartingLocation) || currentLocId === location._id
+    : false;
+
+  const isActive    = travel?.status === 'traveling';
+  const goingHere   = isActive && toId(travel?.to) === location?._id;
+  const goingElse   = isActive && !goingHere;
+  const countdown   = useCountdown(goingHere ? travel?.arrivalTime : null);
+
+  const handleTravel = async () => {
+    setTravelErr('');
+    const result = await onTravel(location._id);
+    if (result && !result.success) setTravelErr(result.error);
+  };
+
+  const dangerColor = location ? (DANGER_COLORS[location.dangerLevel] || '#aaa') : '#aaa';
+  const gradient    = location?.theme?.gradient || 'linear-gradient(160deg,#0a0a14 0%,#141428 100%)';
+  const accent      = location?.theme?.accentColor || '#c9a84c';
+
+  return (
+    <div className={`fm-panel ${open ? 'open' : ''}`}>
+      <button className="fm-panel-close" onClick={onClose}>×</button>
+
+      {location && (
+        <>
+          <div className="fm-panel-banner" style={{ background: gradient }}>
+            <span className="fm-panel-icon">{location.icon}</span>
+            <h2 className="fm-panel-name" style={{ color: accent }}>{location.name}</h2>
+            <p className="fm-panel-region">{location.region?.name}</p>
+          </div>
+
+          <div className="fm-panel-body">
+            <div className="fm-panel-badges">
+              <span className="fm-badge" style={{ color: dangerColor, borderColor: dangerColor }}>
+                {location.dangerLevel}
+              </span>
+              <span className="fm-badge">{location.type}</span>
+              {location.faction && <span className="fm-badge">{location.faction}</span>}
+            </div>
+
+            <p className="fm-panel-desc">{location.description}</p>
+            {location.lore && <p className="fm-panel-lore">"{location.lore}"</p>}
+            {location.population > 0 && (
+              <p className="fm-panel-stat">👥 {location.population.toLocaleString()} inhabitants</p>
+            )}
+
+            <div className="fm-panel-travel">
+              {isHere ? (
+                <div className="fm-tp-here">
+                  <span className="fm-tp-pulse"/>
+                  <span>📍 You are here</span>
+                </div>
+              ) : goingHere ? (
+                <div className="fm-tp-going">
+                  <p className="fm-tp-going-text">
+                    🚶 Arriving in <strong className="fm-tp-countdown">{countdown}</strong>
+                  </p>
+                  <button className="fm-tp-cancel" onClick={onCancelTravel} disabled={travelLoading}>
+                    Cancel journey
+                  </button>
+                </div>
+              ) : goingElse ? (
+                <div className="fm-tp-elsewhere">
+                  <p>🚶 Already traveling to <strong>{travel.to?.name}</strong></p>
+                  <p className="fm-tp-elsewhere-note">Finish your current journey first.</p>
+                </div>
+              ) : (
+                <div className="fm-tp-start">
+                  <div className="fm-tp-meta">
+                    <span>⚔ <span style={{ color: dangerColor }}>{location.dangerLevel}</span> danger</span>
+                    <span>⏱ ~{DANGER_TIME[location.dangerLevel] || '?'}</span>
+                  </div>
+                  {travelErr && <p className="fm-tp-err">{travelErr}</p>}
+                  <button className="fm-tp-go" onClick={handleTravel} disabled={travelLoading}>
+                    {travelLoading ? 'Departing…' : `Journey to ${location.name} →`}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <button className="fm-view-area" onClick={() => navigate(`/world/areas/${location._id}`)}>
+              📜 View Area Forum
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Main WorldMap ─────────────────────────────────────────────────────────
 
 export default function WorldMap() {
   const navigate = useNavigate();
-  const { token, character } = useAuth();
-  const [locations, setLocations]   = useState([]);
-  const [routes, setRoutes]         = useState([]);
-  const [selected, setSelected]     = useState(null);
-  const [currentId, setCurrentId]   = useState(null);
-  const [traveling, setTraveling]   = useState(null);
-  const [travelLoading, setTravelLoading] = useState(false);
-  const [toast, setToast]           = useState('');
+  const { token, character, refreshCharacter } = useAuth();
+  const [locations, setLocations] = useState([]);
+  const [selected, setSelected]   = useState(null);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [loading, setLoading]     = useState(true);
+
+  const handleArrive = useCallback(() => {
+    refreshCharacter?.();
+  }, [refreshCharacter]);
+
+  const { travel, loading: travelLoading, startTravel, cancelTravel } = useTravel(token, handleArrive);
 
   useEffect(() => {
-    get('/api/world/locations').then(res => {
-      const locs = res.data.map(loc => ({
-        ...loc,
-        x: (loc.mapCoords?.x ?? 50) / 10 - 5,
-        z: (loc.mapCoords?.y ?? 50) / 10 - 5,
-      }));
-      setLocations(locs);
-
-      const rs = [];
-      locs.forEach(loc => {
-        (loc.connectedTo || []).forEach(conn => {
-          const connId = typeof conn === 'object' ? conn._id : conn;
-          if (!rs.some(r => (r[0] === loc._id && r[1] === connId) || (r[1] === loc._id && r[0] === connId))) {
-            rs.push([loc._id, connId]);
-          }
-        });
-      });
-      setRoutes(rs);
-    }).catch(() => {});
+    get('/api/world/locations')
+      .then(r => setLocations(r.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    if (!token) return;
-    get('/api/travel/active', token)
-      .then(res => { if (res.data) setTraveling(res.data); })
-      .catch(() => {});
-  }, [token]);
+  const currentLocId = toId(character?.currentLocation);
+  const travelDestId = travel?.status === 'traveling' ? toId(travel?.to) : null;
 
-  useEffect(() => {
-    if (character?.currentLocation) {
-      setCurrentId(typeof character.currentLocation === 'object'
-        ? character.currentLocation._id
-        : character.currentLocation);
-    } else {
-      const starting = locations.find(l => l.isStartingLocation);
-      if (starting) setCurrentId(starting._id);
-    }
-  }, [character, locations]);
-
-  const handleTravel = async (destId) => {
-    if (!token) { setToast('Log in to travel.'); return; }
-    setTravelLoading(true);
-    try {
-      const res = await post('/api/travel', { toLocationId: destId }, token);
-      setTraveling(res.data);
-      setToast(`Traveling to ${selected.name}…`);
-      setSelected(null);
-    } catch (err) {
-      setToast(err.message);
-    } finally {
-      setTravelLoading(false);
-    }
+  const handleSelect = (loc) => {
+    setSelected(loc);
+    setPanelOpen(true);
   };
 
-  const arrivalMins = traveling
-    ? Math.max(0, Math.round((new Date(traveling.arrivalTime) - Date.now()) / 60000))
-    : 0;
+  const handleClose = () => setPanelOpen(false);
 
   return (
     <>
       <BgScene />
       <div className="dashboard">
         <Topbar />
-        <main className="dash-main" style={{ padding: 0 }}>
+        <main className="dash-main" style={{ padding: 0, overflow: 'hidden' }}>
 
-          <div className="wm3d-wrap">
+          <div className="fm-wrap">
 
-            {/* Header */}
-            <div className="wm3d-header">
-              <button className="wm-back" onClick={() => navigate('/dashboard')}>← Back</button>
-              <h1 className="wm-title">World Map</h1>
-              <p className="wm-sub">Click a location to travel</p>
-            </div>
+            {/* Parchment base */}
+            <div className="fm-parchment"/>
+
+            {/* SVG grain noise */}
+            <svg className="fm-layer fm-grain" viewBox="0 0 300 300"
+              preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <filter id="fm-noise-f">
+                  <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" stitchTiles="stitch"/>
+                  <feColorMatrix type="saturate" values="0"/>
+                </filter>
+              </defs>
+              <rect width="300" height="300" filter="url(#fm-noise-f)" opacity="0.13"/>
+            </svg>
+
+            {/* SVG vignette */}
+            <svg className="fm-layer fm-vignette" viewBox="0 0 100 100"
+              preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="fm-vig-g" cx="50%" cy="50%" r="70%">
+                  <stop offset="35%" stopColor="transparent"/>
+                  <stop offset="100%" stopColor="rgba(55,30,8,0.65)"/>
+                </radialGradient>
+              </defs>
+              <rect width="100" height="100" fill="url(#fm-vig-g)"/>
+            </svg>
+
+            {/* Terrain decorations */}
+            <TerrainLayer/>
+
+            {/* Map title */}
+            <div className="fm-title">Known Realm</div>
+
+            {/* Decorative inner border */}
+            <div className="fm-border-frame"/>
 
             {/* Travel status bar */}
-            {traveling && traveling.status === 'traveling' && (
-              <div className="wm3d-travel-bar">
-                <span>🚶 Traveling to <strong>{traveling.to?.name}</strong></span>
-                <span className="wm3d-eta">~{arrivalMins} min remaining</span>
-              </div>
+            {travel?.status === 'traveling' && (
+              <TravelBar travel={travel} onCancel={cancelTravel} travelLoading={travelLoading}/>
             )}
 
-            {/* Toast */}
-            {toast && (
-              <div className="wm3d-toast" onClick={() => setToast('')}>{toast}</div>
-            )}
+            {/* Location pins */}
+            {!loading && locations.map(loc => (
+              <LocationPin
+                key={loc._id}
+                loc={loc}
+                isHere={
+                  currentLocId === null
+                    ? loc.isStartingLocation === true
+                    : currentLocId === loc._id
+                }
+                isTravelDest={travelDestId === loc._id}
+                onClick={handleSelect}
+              />
+            ))}
 
-            {/* 3D Canvas */}
-            <div className="wm3d-canvas">
-              <Canvas shadows camera={{ position: [0, 18, 14], fov: 50 }}>
-                <Suspense fallback={null}>
-                  <Scene
-                    locations={locations}
-                    routes={routes}
-                    currentLocationId={currentId}
-                    onSelectLocation={setSelected}
-                  />
-                </Suspense>
-              </Canvas>
-            </div>
+            {/* Compass rose */}
+            <CompassRose/>
 
-            {/* Selected location panel */}
-            {selected && (
-              <div className="wm3d-info-panel">
-                <button className="wm3d-close" onClick={() => setSelected(null)}>×</button>
-                <div className="wm3d-info-icon">{selected.icon}</div>
-                <h2 className="wm3d-info-name">{selected.name}</h2>
-                <p className="wm3d-info-region">{selected.region?.name || ''}</p>
-                <p className="wm3d-info-desc">{selected.description}</p>
-                <div className="wm3d-info-meta">
-                  <span style={{ color: DANGER_COLORS[selected.dangerLevel] || '#aaa' }}>
-                    {selected.dangerLevel?.charAt(0).toUpperCase() + selected.dangerLevel?.slice(1)} danger
-                  </span>
-                  <span>Pop. {selected.population?.toLocaleString() || '?'}</span>
-                  <span>{selected.faction}</span>
-                </div>
-                {selected._id !== currentId && (
-                  <button
-                    className="btn-primary"
-                    style={{ marginTop: '1rem', width: '100%' }}
-                    onClick={() => handleTravel(selected._id)}
-                    disabled={travelLoading || (traveling && traveling.status === 'traveling')}
-                  >
-                    {travelLoading ? 'Departing…'
-                      : traveling?.status === 'traveling' ? 'Already traveling'
-                      : `Travel to ${selected.name}`}
-                  </button>
-                )}
-                {selected._id === currentId && (
-                  <p className="wm3d-here-msg">📍 You are here</p>
-                )}
-              </div>
-            )}
+            {/* Dimmer when panel open */}
+            {panelOpen && <div className="fm-dimmer" onClick={handleClose}/>}
 
-            {/* Location list */}
-            <div style={{ padding: '1.5rem' }}>
-              <div className="db-section-title">All Locations</div>
-              <div className="wm-location-list">
-                {locations.map(loc => (
-                  <div
-                    key={loc._id}
-                    className={`wm-location-card ${loc._id === currentId ? 'wm-location-current' : ''}`}
-                    onClick={() => setSelected(loc)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <div className="wm-loc-icon">{loc.icon}</div>
-                    <div className="wm-loc-info">
-                      <div className="wm-loc-name">
-                        {loc.name}
-                        {loc._id === currentId && <span className="wm-here-badge">Here</span>}
-                      </div>
-                      <div className="wm-loc-region">{loc.region?.name}</div>
-                      <div className="wm-loc-desc">{loc.description}</div>
-                    </div>
-                    <div className="wm-loc-right">
-                      <span className="wm-danger" style={{ color: DANGER_COLORS[loc.dangerLevel] || '#aaa' }}>
-                        {loc.dangerLevel}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Info / travel panel */}
+            <LocationPanel
+              location={selected}
+              open={panelOpen}
+              onClose={handleClose}
+              navigate={navigate}
+              currentLocId={currentLocId}
+              travel={travel}
+              travelLoading={travelLoading}
+              onTravel={startTravel}
+              onCancelTravel={cancelTravel}
+            />
 
           </div>
+
         </main>
       </div>
     </>
