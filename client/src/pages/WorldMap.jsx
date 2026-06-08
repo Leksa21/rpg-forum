@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
 import { useAuth } from '../context/AuthContext';
-import { get } from '../lib/api';
+import { get, post } from '../lib/api';
 import { useTravel } from '../hooks/useTravel';
 import BgScene from '../components/layout/BgScene';
 import Topbar from '../components/layout/Topbar';
@@ -150,6 +150,18 @@ export default function WorldMap() {
   const handleArrive = useCallback(() => { refreshCharacter?.(); }, [refreshCharacter]);
   const { travel, loading: travelLoading, startTravel, cancelTravel } = useTravel(token, handleArrive);
 
+  // Seed discovered list from character data (already populated with mapCoords by API)
+  const [discoveredLocations, setDiscoveredLocations] = useState(
+    () => character?.discoveredLocations ?? []
+  );
+
+  // Keep in sync if character reloads (e.g. after travel arrives)
+  useEffect(() => {
+    if (character?.discoveredLocations) {
+      setDiscoveredLocations(character.discoveredLocations);
+    }
+  }, [character?.discoveredLocations]);
+
   useEffect(() => {
     get('/api/world/locations')
       .then(r => setLocations(r.data ?? []))
@@ -187,6 +199,56 @@ export default function WorldMap() {
     return [wx, ty + 38, wz + 50];
   }, [locations, currentLocId]);
 
+  // Discovery check — runs every 4 seconds, fires once per location
+  const discoveredIdsRef = useRef(new Set());
+  useEffect(() => {
+    if (character?.discoveredLocations) {
+      character.discoveredLocations.forEach(l => discoveredIdsRef.current.add(toId(l._id ?? l)));
+    }
+  }, [character?.discoveredLocations]);
+
+  useEffect(() => {
+    if (!token || !locations.length) return;
+
+    const TRIGGER_RADIUS = 16;
+
+    function getPlayerXZ() {
+      if (travelInfo) {
+        const total   = new Date(travelInfo.arrivalTime) - new Date(travelInfo.departureTime);
+        const elapsed = Date.now() - new Date(travelInfo.departureTime);
+        const raw     = Math.min(1, Math.max(0, elapsed / total));
+        const p       = raw * raw * (3 - 2 * raw);
+        return [
+          travelInfo.fromMapX + (travelInfo.toMapX - travelInfo.fromMapX) * p,
+          travelInfo.fromMapY + (travelInfo.toMapY - travelInfo.fromMapY) * p,
+        ];
+      }
+      const loc = locations.find(l => toId(l._id) === currentLocId)
+                ?? locations.find(l => l.isStartingLocation)
+                ?? locations[0];
+      return [loc?.mapCoords?.x ?? 50, loc?.mapCoords?.y ?? 50];
+    }
+
+    function checkDiscoveries() {
+      const [px, py] = getPlayerXZ();
+      locations.forEach(loc => {
+        const id = toId(loc._id);
+        if (discoveredIdsRef.current.has(id)) return;
+        const dx = (loc.mapCoords?.x ?? 50) - px;
+        const dy = (loc.mapCoords?.y ?? 50) - py;
+        if (Math.sqrt(dx * dx + dy * dy) < TRIGGER_RADIUS) {
+          discoveredIdsRef.current.add(id);
+          setDiscoveredLocations(prev => [...prev, loc]);
+          post('/api/character/discover', { locationId: id }, token).catch(() => {});
+        }
+      });
+    }
+
+    checkDiscoveries();
+    const id = setInterval(checkDiscoveries, 4000);
+    return () => clearInterval(id);
+  }, [token, locations, currentLocId, travelInfo]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleSelect = (loc) => { setSelected(loc); setPanelOpen(true); };
   const handleClose  = () => setPanelOpen(false);
 
@@ -213,6 +275,7 @@ export default function WorldMap() {
                   locations={locations}
                   currentLocId={currentLocId}
                   travelInfo={travelInfo}
+                  discoveredLocations={discoveredLocations}
                   onSelectLocation={handleSelect}
                 />
               </Suspense>

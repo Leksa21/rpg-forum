@@ -2,11 +2,28 @@ const Character = require('../models/Character');
 
 const getMyCharacter = async (req, res) => {
   try {
-    const character = await Character.findOne({ owner: req.userId, isDead: false });
+    const character = await Character.findOne({ owner: req.userId, isDead: false })
+      .populate('discoveredLocations', 'name icon mapCoords');
     if (!character) {
       return res.status(404).json({ success: false, error: 'No character found' });
     }
     res.json({ success: true, data: character });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+const discoverLocation = async (req, res) => {
+  try {
+    const { locationId } = req.body;
+    if (!locationId) return res.status(400).json({ success: false, error: 'locationId required' });
+
+    await Character.findOneAndUpdate(
+      { owner: req.userId, isDead: false },
+      { $addToSet: { discoveredLocations: locationId } }
+    );
+
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -91,4 +108,4 @@ const updateBackstory = async (req, res) => {
   }
 };
 
-module.exports = { getMyCharacter, getAllMyCharacters, createCharacter, setupCharacter, updateBackstory };
+module.exports = { getMyCharacter, getAllMyCharacters, createCharacter, setupCharacter, updateBackstory, discoverLocation };

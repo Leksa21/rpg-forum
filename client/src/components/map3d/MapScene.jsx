@@ -4,13 +4,14 @@ import { getTerrainHeight } from './terrainNoise';
 import Terrain from './Terrain';
 import CrystalPin from './CrystalPin';
 import PlayerMarker from './PlayerMarker';
+import FogPlane from './FogPlane';
 
 function toId(v) {
   if (!v) return null;
   return typeof v === 'object' && v._id ? v._id.toString() : v?.toString() ?? null;
 }
 
-export default function MapScene({ locations, currentLocId, travelInfo, onSelectLocation }) {
+export default function MapScene({ locations, currentLocId, travelInfo, discoveredLocations, onSelectLocation }) {
   const controlsRef = useRef();
 
   const currentLoc = useMemo(() => {
@@ -62,6 +63,13 @@ export default function MapScene({ locations, currentLocId, travelInfo, onSelect
       })}
 
       {currentLoc && <PlayerMarker mapX={playerMapX} mapY={playerMapY} travelInfo={travelInfo} />}
+
+      <FogPlane
+        mapX={playerMapX}
+        mapY={playerMapY}
+        travelInfo={travelInfo}
+        discoveredLocations={discoveredLocations}
+      />
 
       <OrbitControls
         ref={controlsRef}

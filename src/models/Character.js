@@ -77,6 +77,10 @@ const characterSchema = new mongoose.Schema(
       ref: 'Location',
       default: null,
     },
+    discoveredLocations: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Location',
+    }],
   },
   {
     timestamps: true,
