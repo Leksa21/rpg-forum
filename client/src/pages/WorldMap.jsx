@@ -159,6 +159,23 @@ export default function WorldMap() {
 
   const currentLocId = toId(character?.currentLocation);
 
+  const travelInfo = useMemo(() => {
+    if (!travel || travel.status !== 'traveling' || !locations.length) return null;
+    const fromId = toId(travel.from);
+    const destId = toId(travel.to);
+    const fromLoc = locations.find(l => toId(l._id) === fromId);
+    const toLoc   = locations.find(l => toId(l._id) === destId);
+    if (!fromLoc?.mapCoords || !toLoc?.mapCoords) return null;
+    return {
+      fromMapX:      fromLoc.mapCoords.x,
+      fromMapY:      fromLoc.mapCoords.y,
+      toMapX:        toLoc.mapCoords.x,
+      toMapY:        toLoc.mapCoords.y,
+      departureTime: travel.departureTime,
+      arrivalTime:   travel.arrivalTime,
+    };
+  }, [travel, locations]);
+
   const initialCameraPos = useMemo(() => {
     if (!locations.length) return [0, 40, 55];
     const loc = locations.find(l => toId(l._id) === currentLocId)
@@ -195,6 +212,7 @@ export default function WorldMap() {
                 <MapScene
                   locations={locations}
                   currentLocId={currentLocId}
+                  travelInfo={travelInfo}
                   onSelectLocation={handleSelect}
                 />
               </Suspense>

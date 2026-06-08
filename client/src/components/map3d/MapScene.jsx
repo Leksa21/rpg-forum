@@ -10,7 +10,7 @@ function toId(v) {
   return typeof v === 'object' && v._id ? v._id.toString() : v?.toString() ?? null;
 }
 
-export default function MapScene({ locations, currentLocId, onSelectLocation }) {
+export default function MapScene({ locations, currentLocId, travelInfo, onSelectLocation }) {
   const controlsRef = useRef();
 
   const currentLoc = useMemo(() => {
@@ -61,7 +61,7 @@ export default function MapScene({ locations, currentLocId, onSelectLocation }) 
         );
       })}
 
-      {currentLoc && <PlayerMarker mapX={playerMapX} mapY={playerMapY} />}
+      {currentLoc && <PlayerMarker mapX={playerMapX} mapY={playerMapY} travelInfo={travelInfo} />}
 
       <OrbitControls
         ref={controlsRef}
