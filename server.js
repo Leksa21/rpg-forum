@@ -7,6 +7,7 @@ const path       = require('path');
 const connectDB  = require('./src/config/database');
 const indexRouter = require('./src/routes/index');
 const { setupChat } = require('./src/socket/chat');
+const { setupMap }  = require('./src/socket/map');
 
 const app    = express();
 const server = http.createServer(app);
@@ -35,6 +36,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 setupChat(io);
+setupMap(io);
 
 connectDB().then(() => {
   server.listen(PORT, () => {

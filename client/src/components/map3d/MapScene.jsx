@@ -5,13 +5,14 @@ import Terrain from './Terrain';
 import CrystalPin from './CrystalPin';
 import PlayerMarker from './PlayerMarker';
 import FogPlane from './FogPlane';
+import OtherPlayerDot from './OtherPlayerDot';
 
 function toId(v) {
   if (!v) return null;
   return typeof v === 'object' && v._id ? v._id.toString() : v?.toString() ?? null;
 }
 
-export default function MapScene({ locations, currentLocId, travelInfo, discoveredLocations, onSelectLocation }) {
+export default function MapScene({ locations, currentLocId, travelInfo, discoveredLocations, otherPlayers, onSelectLocation }) {
   const controlsRef = useRef();
 
   const currentLoc = useMemo(() => {
@@ -63,6 +64,10 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
       })}
 
       {currentLoc && <PlayerMarker mapX={playerMapX} mapY={playerMapY} travelInfo={travelInfo} />}
+
+      {otherPlayers.map(p => (
+        <OtherPlayerDot key={p.charId} player={p} />
+      ))}
 
       <FogPlane
         mapX={playerMapX}

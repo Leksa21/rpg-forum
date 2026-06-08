@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
 import { useAuth } from '../context/AuthContext';
 import { get, post } from '../lib/api';
+import { useMapSocket } from '../hooks/useMapSocket';
 import { useTravel } from '../hooks/useTravel';
 import BgScene from '../components/layout/BgScene';
 import Topbar from '../components/layout/Topbar';
@@ -170,6 +171,17 @@ export default function WorldMap() {
   }, []);
 
   const currentLocId = toId(character?.currentLocation);
+  const myCharId     = toId(character?._id);
+
+  const [playerMapX, playerMapY] = useMemo(() => {
+    if (!locations.length) return [50, 50];
+    const loc = locations.find(l => toId(l._id) === currentLocId)
+              ?? locations.find(l => l.isStartingLocation)
+              ?? locations[0];
+    return [loc?.mapCoords?.x ?? 50, loc?.mapCoords?.y ?? 50];
+  }, [locations, currentLocId]);
+
+  const otherPlayers = useMapSocket(token, playerMapX, playerMapY, travelInfo, myCharId);
 
   const travelInfo = useMemo(() => {
     if (!travel || travel.status !== 'traveling' || !locations.length) return null;
@@ -276,6 +288,7 @@ export default function WorldMap() {
                   currentLocId={currentLocId}
                   travelInfo={travelInfo}
                   discoveredLocations={discoveredLocations}
+                  otherPlayers={otherPlayers}
                   onSelectLocation={handleSelect}
                 />
               </Suspense>
