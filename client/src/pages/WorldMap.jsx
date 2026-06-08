@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
 import { useAuth } from '../context/AuthContext';
@@ -181,8 +181,6 @@ export default function WorldMap() {
     return [loc?.mapCoords?.x ?? 50, loc?.mapCoords?.y ?? 50];
   }, [locations, currentLocId]);
 
-  const otherPlayers = useMapSocket(token, playerMapX, playerMapY, travelInfo, myCharId);
-
   const travelInfo = useMemo(() => {
     if (!travel || travel.status !== 'traveling' || !locations.length) return null;
     const fromId = toId(travel.from);
@@ -199,6 +197,8 @@ export default function WorldMap() {
       arrivalTime:   travel.arrivalTime,
     };
   }, [travel, locations]);
+
+  const otherPlayers = useMapSocket(token, playerMapX, playerMapY, travelInfo, myCharId);
 
   const initialCameraPos = useMemo(() => {
     if (!locations.length) return [0, 40, 55];
