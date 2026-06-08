@@ -3176,3 +3176,79 @@ html, body {
 ::-webkit-scrollbar-thumb { background: rgba(80,55,160,0.4); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(80,55,160,0.7); }
 ::selection { background: rgba(212,168,67,0.25); color: var(--text); }
+
+/* ── 3D World Map ─────────────────────────────────────────────── */
+.wm3d-wrap {
+  position: fixed; inset: 0; display: flex; flex-direction: column; z-index: 1;
+}
+.wm3d-canvas-wrap {
+  flex: 1; position: relative; min-height: 0; overflow: hidden;
+}
+.wm3d-canvas-wrap canvas { display: block; width: 100% !important; height: 100% !important; }
+
+/* Travel HUD bar */
+.wm3d-travel-bar {
+  position: absolute; bottom: 2.5rem; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 1rem; z-index: 20;
+  background: rgba(8,6,20,0.88); border: 1px solid rgba(212,168,67,0.35);
+  border-radius: 12px; padding: 0.55rem 1.1rem;
+  backdrop-filter: blur(14px); color: var(--text); font-size: 0.88rem;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 0 20px rgba(212,168,67,0.08);
+}
+.wm3d-tbar-countdown { color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.95rem; min-width: 3.5rem; text-align: center; }
+.wm3d-tbar-cancel { padding: 0.25rem 0.7rem; font-size: 0.78rem; border-radius: 6px; }
+
+/* Location panel */
+.wm3d-panel {
+  position: absolute; top: 0; right: 0; bottom: 0; width: 340px;
+  background: rgba(8,6,22,0.96); border-left: 1px solid rgba(200,152,55,0.28);
+  backdrop-filter: blur(20px); z-index: 20; overflow-y: auto;
+  transform: translateX(110%); transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+  display: flex; flex-direction: column;
+}
+.wm3d-panel.open { transform: translateX(0); }
+.wm3d-panel-close {
+  position: absolute; top: 0.75rem; right: 0.85rem;
+  background: none; border: none; color: var(--text-muted); font-size: 1.4rem;
+  cursor: pointer; line-height: 1; z-index: 2; transition: color 0.2s;
+}
+.wm3d-panel-close:hover { color: var(--text); }
+.wm3d-panel-banner {
+  padding: 2rem 1.25rem 1.25rem; text-align: center;
+  border-bottom: 1px solid rgba(200,152,55,0.18); position: relative;
+}
+.wm3d-panel-icon { font-size: 2.2rem; display: block; margin-bottom: 0.5rem; }
+.wm3d-panel-name { font-family: 'Cinzel', serif; font-size: 1.2rem; margin: 0 0 0.25rem; }
+.wm3d-panel-region { font-size: 0.8rem; color: var(--text-muted); margin: 0; }
+.wm3d-panel-body { padding: 1.1rem 1.25rem; flex: 1; }
+
+/* Dimmer */
+.wm3d-dimmer {
+  position: absolute; inset: 0; background: rgba(6,4,14,0.4);
+  z-index: 19; backdrop-filter: blur(2px);
+}
+
+/* Controls hint */
+.wm3d-hint {
+  position: absolute; bottom: 0.75rem; left: 50%; transform: translateX(-50%);
+  font-size: 0.72rem; color: rgba(160,157,184,0.5); pointer-events: none;
+  white-space: nowrap; z-index: 5;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+}
+
+/* Crystal pin label */
+.wm3d-label {
+  font-family: 'Cinzel', serif; font-size: 11px; font-weight: 500;
+  white-space: nowrap; text-align: center;
+  padding: 2px 8px; border-radius: 5px;
+  background: rgba(6,4,14,0.7); backdrop-filter: blur(6px);
+  border: 1px solid rgba(139,92,246,0.3);
+  color: #c4b0f0;
+  text-shadow: 0 0 8px rgba(139,92,246,0.7);
+  pointer-events: none;
+}
+.wm3d-label[data-here='true'] {
+  color: #f0c058; border-color: rgba(212,168,67,0.4);
+  text-shadow: 0 0 12px rgba(212,168,67,0.9);
+}
+.wm3d-label-here { font-size: 8px; margin-top: 2px; color: #d4a843; letter-spacing: 0.05em; }
