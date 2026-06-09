@@ -202,14 +202,13 @@ export default function WorldMap() {
   const { otherPlayers, encounter, respondToEncounter } = useMapSocket(token, playerMapX, playerMapY, travelInfo, myCharId);
 
   const initialCameraPos = useMemo(() => {
-    if (!locations.length) return [0, 40, 55];
+    if (!locations.length) return [0, 90, 38];
     const loc = locations.find(l => toId(l._id) === currentLocId)
               ?? locations.find(l => l.isStartingLocation)
               ?? locations[0];
     const wx = (loc?.mapCoords?.x ?? 50) - 50;
     const wz = (loc?.mapCoords?.y ?? 50) - 50;
-    const ty = getTerrainHeight(wx, wz);
-    return [wx, ty + 38, wz + 50];
+    return [wx, 90, wz + 38];
   }, [locations, currentLocId]);
 
   // Discovery check — runs every 4 seconds, fires once per location
@@ -279,7 +278,8 @@ export default function WorldMap() {
         ) : (
           <div className="wm3d-canvas-wrap">
             <Canvas
-              camera={{ position: initialCameraPos, fov: 60, near: 0.5, far: 300 }}
+              orthographic
+              camera={{ position: initialCameraPos, zoom: 8, near: 1, far: 800 }}
               gl={{ antialias: true, alpha: false }}
             >
               <Suspense fallback={null}>

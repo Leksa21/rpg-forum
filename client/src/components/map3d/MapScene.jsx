@@ -92,18 +92,18 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
         discoveredLocations={discoveredLocations}
       />
 
-      {/* Right-click = pan, scroll = zoom, rotation disabled */}
+      {/* Left or right drag = pan, scroll = zoom, no rotation */}
       <OrbitControls
         ref={controlsRef}
         target={orbitTarget}
         enableRotate={false}
         enableDamping
         dampingFactor={0.08}
-        minDistance={10}
-        maxDistance={75}
+        minZoom={3}
+        maxZoom={55}
         enablePan
-        panSpeed={1.1}
-        mouseButtons={{ LEFT: null, MIDDLE: 1, RIGHT: 2 }}
+        panSpeed={1.0}
+        mouseButtons={{ LEFT: 2, MIDDLE: 1, RIGHT: 2 }}
       />
     </>
   );

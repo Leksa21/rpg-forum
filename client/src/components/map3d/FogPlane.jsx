@@ -3,9 +3,9 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 const MAX_DISCOVERED  = 30;
-const REVEAL_RADIUS   = 8;
-const DISCOVER_RADIUS = 5;
-const SOFT_EDGE       = 2;
+const REVEAL_RADIUS   = 4;
+const DISCOVER_RADIUS = 3;
+const SOFT_EDGE       = 1.5;
 
 function smoothStep(t) {
   return t * t * (3 - 2 * t);
@@ -48,7 +48,7 @@ const fragmentShader = /* glsl */`
     }
 
     if (alpha < 0.01) discard;
-    gl_FragColor = vec4(0.04, 0.02, 0.09, alpha * 0.92);
+    gl_FragColor = vec4(0.05, 0.03, 0.12, alpha * 0.52);
   }
 `;
 
