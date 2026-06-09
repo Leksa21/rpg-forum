@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import BgScene from '../components/layout/BgScene';
 import Topbar from '../components/layout/Topbar';
 import GlobalChat from '../components/GlobalChat';
+import ActiveAdventurers from '../components/ActiveAdventurers';
 
 const STAT_LABELS = {
   strength:     { label: 'STR', icon: '⚔️' },
@@ -99,6 +100,9 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+
+          {/* Active Adventurers */}
+          <ActiveAdventurers />
 
           {/* Global Chat */}
           <GlobalChat />

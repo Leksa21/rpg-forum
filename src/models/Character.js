@@ -70,6 +70,10 @@ const characterSchema = new mongoose.Schema(
       maxlength: [150, 'Tagline cannot exceed 150 characters'],
       default: '',
     },
+    lastActiveAt: {
+      type: Date,
+      default: null,
+    },
     isDead: {
       type: Boolean,
       default: false,

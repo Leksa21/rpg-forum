@@ -2,12 +2,32 @@ const Character = require('../models/Character');
 
 const getMyCharacter = async (req, res) => {
   try {
-    const character = await Character.findOne({ owner: req.userId, isDead: false })
-      .populate('discoveredLocations', 'name icon mapCoords');
+    const character = await Character.findOneAndUpdate(
+      { owner: req.userId, isDead: false },
+      { lastActiveAt: new Date() },
+      { new: true },
+    ).populate('discoveredLocations', 'name icon mapCoords');
     if (!character) {
       return res.status(404).json({ success: false, error: 'No character found' });
     }
     res.json({ success: true, data: character });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+const getActiveCharacters = async (req, res) => {
+  try {
+    const cutoff = new Date(Date.now() - 72 * 60 * 60 * 1000);
+    const characters = await Character.find({
+      isDead: false,
+      isSetup: true,
+      lastActiveAt: { $gte: cutoff },
+    })
+      .select('name class race level avatar tagline lastActiveAt')
+      .sort({ lastActiveAt: -1 })
+      .limit(50);
+    res.json({ success: true, data: characters });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -142,4 +162,4 @@ const updateBackstory = async (req, res) => {
   }
 };
 
-module.exports = { getMyCharacter, getAllMyCharacters, createCharacter, setupCharacter, updateBackstory, updateProfile, getPublicCharacter, discoverLocation };
+module.exports = { getMyCharacter, getAllMyCharacters, createCharacter, setupCharacter, updateBackstory, updateProfile, getPublicCharacter, getActiveCharacters, discoverLocation };

@@ -9,11 +9,13 @@ const {
   updateBackstory,
   updateProfile,
   getPublicCharacter,
+  getActiveCharacters,
   discoverLocation,
 } = require('../controllers/characterController');
 
-router.get('/all',       protect, getAllMyCharacters);
-router.get('/me',        protect, getMyCharacter);
+router.get('/all',    protect, getAllMyCharacters);
+router.get('/me',     protect, getMyCharacter);
+router.get('/active', protect, getActiveCharacters);
 router.post('/',         protect, createCharacter);
 router.put('/setup',     protect, setupCharacter);
 router.put('/backstory', protect, updateBackstory);
