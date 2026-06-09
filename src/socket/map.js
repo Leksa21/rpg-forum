@@ -168,4 +168,4 @@ const setupMap = (io) => {
   process.on('exit', () => clearInterval(broadcastInterval));
 };
 
-module.exports = { setupMap };
+module.exports = { setupMap, resolveOutcome };
