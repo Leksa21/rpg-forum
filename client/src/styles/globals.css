@@ -1342,6 +1342,30 @@ html, body {
 .cp-backstory-count { font-size: 0.72rem; color: var(--text-muted); }
 .cp-save-btn { width: auto; padding: 0.45rem 1.25rem; font-size: 0.65rem; margin-top: 0; }
 
+/* Character name links — used in forum list, post detail, area forum, dashboard */
+.forum-char-link,
+.post-char-link,
+.comment-char-link,
+.af-char-link {
+  text-decoration: none;
+  color: inherit;
+  transition: color 0.15s;
+}
+.forum-char-link:hover,
+.post-char-link:hover,
+.comment-char-link:hover,
+.af-char-link:hover { color: var(--gold); }
+
+/* Dashboard hero name as link */
+a.db-hero-name {
+  text-decoration: none;
+  color: var(--gold);
+  transition: text-shadow 0.2s;
+}
+a.db-hero-name:hover {
+  text-shadow: 0 0 20px rgba(212,168,67,0.6);
+}
+
 /* Tagline in hero banner */
 .cp-hero-tagline {
   font-family: 'Crimson Text', serif; font-style: italic;

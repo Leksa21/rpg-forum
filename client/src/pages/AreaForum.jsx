@@ -124,14 +124,32 @@ export default function AreaForum() {
                     {posts.map(p => {
                       const classColor = CLASS_COLORS[p.character?.class] || 'var(--gold)';
                       return (
-                        <Link key={p._id} to={`/forum/${p._id}`} className="af-post-row">
+                        <div
+                          key={p._id}
+                          className="af-post-row"
+                          onClick={() => navigate(`/forum/${p._id}`)}
+                          role="link"
+                          tabIndex={0}
+                          onKeyDown={e => e.key === 'Enter' && navigate(`/forum/${p._id}`)}
+                        >
                           <div className="af-post-avatar" style={{ background: `${classColor}22`, borderColor: classColor }}>
                             {p.character?.avatar || '?'}
                           </div>
                           <div className="af-post-info">
                             <div className="af-post-title">{p.isPinned && <span className="af-pin">📌 </span>}{p.title}</div>
                             <div className="af-post-meta">
-                              <span style={{ color: classColor }}>{p.character?.name || p.author?.username}</span>
+                              {p.character?._id ? (
+                                <Link
+                                  to={`/character/${p.character._id}`}
+                                  className="af-char-link"
+                                  style={{ color: classColor }}
+                                  onClick={e => e.stopPropagation()}
+                                >
+                                  {p.character.name}
+                                </Link>
+                              ) : (
+                                <span style={{ color: classColor }}>{p.character?.name || p.author?.username}</span>
+                              )}
                               <span className="af-dot">·</span>
                               <span>{timeAgo(p.createdAt)}</span>
                               <span className="af-dot">·</span>
@@ -141,7 +159,7 @@ export default function AreaForum() {
                             </div>
                           </div>
                           <div className="af-post-category">{p.category}</div>
-                        </Link>
+                        </div>
                       );
                     })}
                   </div>

@@ -125,7 +125,13 @@ export default function PostDetail() {
               <div className="post-art-by">
                 <span className="post-char-avatar">{postData.character?.avatar || '⚔️'}</span>
                 <div>
-                  <span className="post-char-name">{postData.character?.name}</span>
+                  {postData.character?._id ? (
+                    <Link to={`/character/${postData.character._id}`} className="post-char-name post-char-link">
+                      {postData.character.name}
+                    </Link>
+                  ) : (
+                    <span className="post-char-name">{postData.character?.name}</span>
+                  )}
                   {postData.character?.class && (
                     <span className="post-char-class"> · {postData.character.race} {postData.character.class} · Lv.{postData.character.level}</span>
                   )}
@@ -165,7 +171,13 @@ export default function PostDetail() {
                   <div className="comment-avatar">{c.character?.avatar || '⚔️'}</div>
                   <div className="comment-body">
                     <div className="comment-header">
-                      <span className="comment-char-name">{c.character?.name || 'Unknown'}</span>
+                      {c.character?._id ? (
+                        <Link to={`/character/${c.character._id}`} className="comment-char-name comment-char-link">
+                          {c.character.name}
+                        </Link>
+                      ) : (
+                        <span className="comment-char-name">{c.character?.name || 'Unknown'}</span>
+                      )}
                       {c.character?.class && (
                         <span className="comment-char-class"> · {c.character.race} {c.character.class}</span>
                       )}

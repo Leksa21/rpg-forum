@@ -176,7 +176,14 @@ export default function ForumList() {
               </div>
             ) : (
               posts.map(post => (
-                <Link key={post._id} to={`/forum/${post._id}`} className="forum-post-row">
+                <div
+                  key={post._id}
+                  className="forum-post-row"
+                  onClick={() => navigate(`/forum/${post._id}`)}
+                  role="link"
+                  tabIndex={0}
+                  onKeyDown={e => e.key === 'Enter' && navigate(`/forum/${post._id}`)}
+                >
                   <div className="forum-post-avatar">
                     {post.character?.avatar || '⚔️'}
                   </div>
@@ -186,12 +193,20 @@ export default function ForumList() {
                       <span className="forum-post-title">{post.title}</span>
                     </div>
                     <div className="forum-post-meta">
-                      <span className="forum-post-author">
-                        {post.character?.name || 'Unknown'}
-                        {post.character?.class && (
-                          <span className="forum-post-class"> · {post.character.race} {post.character.class}</span>
-                        )}
-                      </span>
+                      {post.character?._id ? (
+                        <Link
+                          to={`/character/${post.character._id}`}
+                          className="forum-post-author forum-char-link"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          {post.character.name}
+                          {post.character.class && (
+                            <span className="forum-post-class"> · {post.character.race} {post.character.class}</span>
+                          )}
+                        </Link>
+                      ) : (
+                        <span className="forum-post-author">{post.character?.name || 'Unknown'}</span>
+                      )}
                       <span className="forum-meta-dot">·</span>
                       <span className="forum-post-date">{formatDate(post.createdAt)}</span>
                       {post.tags?.length > 0 && (
@@ -211,7 +226,7 @@ export default function ForumList() {
                       <span title="Views">👁 {post.views ?? 0}</span>
                     </div>
                   </div>
-                </Link>
+                </div>
               ))
             )}
           </div>
