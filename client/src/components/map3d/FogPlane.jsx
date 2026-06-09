@@ -1,11 +1,12 @@
 import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { MAP_SCALE } from './terrainNoise';
 
 const MAX_DISCOVERED  = 30;
-const REVEAL_RADIUS   = 4;
-const DISCOVER_RADIUS = 3;
-const SOFT_EDGE       = 1.5;
+const REVEAL_RADIUS   = 4  * MAP_SCALE;
+const DISCOVER_RADIUS = 3  * MAP_SCALE;
+const SOFT_EDGE       = 1.5 * MAP_SCALE;
 
 function smoothStep(t) {
   return t * t * (3 - 2 * t);
@@ -56,7 +57,7 @@ export default function FogPlane({ mapX, mapY, travelInfo, discoveredLocations }
   const matRef = useRef();
 
   const uniforms = useMemo(() => ({
-    uPlayerPos:       { value: new THREE.Vector2(mapX - 50, mapY - 50) },
+    uPlayerPos:       { value: new THREE.Vector2((mapX - 50) * MAP_SCALE, (mapY - 50) * MAP_SCALE) },
     uRevealRadius:    { value: REVEAL_RADIUS },
     uDiscoverRadius:  { value: DISCOVER_RADIUS },
     uSoftEdge:        { value: SOFT_EDGE },
@@ -69,8 +70,8 @@ export default function FogPlane({ mapX, mapY, travelInfo, discoveredLocations }
     const count = Math.min(discoveredLocations.length, MAX_DISCOVERED);
     matRef.current.uniforms.uDiscoveredCount.value = count;
     discoveredLocations.slice(0, MAX_DISCOVERED).forEach((loc, i) => {
-      const wx = (loc.mapCoords?.x ?? 50) - 50;
-      const wz = (loc.mapCoords?.y ?? 50) - 50;
+      const wx = ((loc.mapCoords?.x ?? 50) - 50) * MAP_SCALE;
+      const wz = ((loc.mapCoords?.y ?? 50) - 50) * MAP_SCALE;
       matRef.current.uniforms.uDiscoveredPos.value[i].set(wx, wz);
     });
   }, [discoveredLocations]);
@@ -86,11 +87,11 @@ export default function FogPlane({ mapX, mapY, travelInfo, discoveredLocations }
       const p       = smoothStep(raw);
       const mx      = travelInfo.fromMapX + (travelInfo.toMapX - travelInfo.fromMapX) * p;
       const my      = travelInfo.fromMapY + (travelInfo.toMapY - travelInfo.fromMapY) * p;
-      wx = mx - 50;
-      wz = my - 50;
+      wx = (mx - 50) * MAP_SCALE;
+      wz = (my - 50) * MAP_SCALE;
     } else {
-      wx = mapX - 50;
-      wz = mapY - 50;
+      wx = (mapX - 50) * MAP_SCALE;
+      wz = (mapY - 50) * MAP_SCALE;
     }
 
     matRef.current.uniforms.uPlayerPos.value.set(wx, wz);
@@ -98,7 +99,7 @@ export default function FogPlane({ mapX, mapY, travelInfo, discoveredLocations }
 
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.4, 0]} renderOrder={10} visible={false}>
-      <planeGeometry args={[800, 800]} />
+      <planeGeometry args={[3200, 3200]} />
       <shaderMaterial
         ref={matRef}
         vertexShader={vertexShader}

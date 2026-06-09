@@ -2,7 +2,7 @@ import { useRef, useState, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { getTerrainHeight } from './terrainNoise';
+import { getTerrainHeight, MAP_SCALE } from './terrainNoise';
 
 const SILVER    = new THREE.Color('#8ab4d4');
 const LERP_RATE = 0.05;
@@ -11,11 +11,11 @@ export default function OtherPlayerDot({ player }) {
   const groupRef = useRef();
   const [hovered, setHovered] = useState(false);
 
-  const targetRef = useRef({ wx: player.mapX - 50, wz: player.mapY - 50 });
-  targetRef.current = { wx: player.mapX - 50, wz: player.mapY - 50 };
+  const targetRef = useRef({ wx: (player.mapX - 50) * MAP_SCALE, wz: (player.mapY - 50) * MAP_SCALE });
+  targetRef.current = { wx: (player.mapX - 50) * MAP_SCALE, wz: (player.mapY - 50) * MAP_SCALE };
 
-  const initWx = player.mapX - 50;
-  const initWz = player.mapY - 50;
+  const initWx = (player.mapX - 50) * MAP_SCALE;
+  const initWz = (player.mapY - 50) * MAP_SCALE;
   const initY  = useMemo(() => getTerrainHeight(initWx, initWz), [initWx, initWz]);
 
   useFrame(() => {

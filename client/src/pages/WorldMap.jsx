@@ -9,7 +9,7 @@ import BgScene from '../components/layout/BgScene';
 import Topbar from '../components/layout/Topbar';
 import MapScene from '../components/map3d/MapScene';
 import EncounterOverlay from '../components/map3d/EncounterOverlay';
-import { getTerrainHeight } from '../components/map3d/terrainNoise';
+import { getTerrainHeight, MAP_SCALE } from '../components/map3d/terrainNoise';
 
 const DANGER_COLORS = {
   safe: '#4a9a4a', low: '#7aaa44', medium: '#d4ac0d', high: '#e07020', deadly: '#c0392b',
@@ -202,13 +202,13 @@ export default function WorldMap() {
   const { otherPlayers, encounter, respondToEncounter } = useMapSocket(token, playerMapX, playerMapY, travelInfo, myCharId);
 
   const initialCameraPos = useMemo(() => {
-    if (!locations.length) return [0, 56, 68];
+    if (!locations.length) return [0, 120, 160];
     const loc = locations.find(l => toId(l._id) === currentLocId)
               ?? locations.find(l => l.isStartingLocation)
               ?? locations[0];
-    const wx = (loc?.mapCoords?.x ?? 50) - 50;
-    const wz = (loc?.mapCoords?.y ?? 50) - 50;
-    return [wx, 56, wz + 68];
+    const wx = ((loc?.mapCoords?.x ?? 50) - 50) * MAP_SCALE;
+    const wz = ((loc?.mapCoords?.y ?? 50) - 50) * MAP_SCALE;
+    return [wx, 120, wz + 160];
   }, [locations, currentLocId]);
 
   // Discovery check — runs every 4 seconds, fires once per location
@@ -278,7 +278,7 @@ export default function WorldMap() {
         ) : (
           <div className="wm3d-canvas-wrap">
             <Canvas
-              camera={{ position: initialCameraPos, fov: 50, near: 0.5, far: 600 }}
+              camera={{ position: initialCameraPos, fov: 50, near: 1, far: 2000 }}
               gl={{ antialias: true, alpha: false }}
             >
               <Suspense fallback={null}>

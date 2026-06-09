@@ -1,7 +1,7 @@
 import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { getTerrainHeight } from './terrainNoise';
+import { getTerrainHeight, MAP_SCALE } from './terrainNoise';
 
 const GOLD = new THREE.Color('#d4a843');
 
@@ -15,8 +15,8 @@ export default function PlayerMarker({ mapX, mapY, travelInfo, encounterActive }
   const ring2Ref    = useRef();
   const frozenRef   = useRef(null); // snapshot position when encounter starts
 
-  const staticWx    = mapX - 50;
-  const staticWz    = mapY - 50;
+  const staticWx    = (mapX - 50) * MAP_SCALE;
+  const staticWz    = (mapY - 50) * MAP_SCALE;
   const staticBaseY = useMemo(() => getTerrainHeight(staticWx, staticWz), [staticWx, staticWz]);
 
   useFrame(({ clock }) => {
@@ -31,8 +31,8 @@ export default function PlayerMarker({ mapX, mapY, travelInfo, encounterActive }
           const elapsed = Date.now() - new Date(travelInfo.departureTime);
           const raw     = Math.min(1, Math.max(0, elapsed / total));
           const p       = smoothStep(raw);
-          wx    = (travelInfo.fromMapX + (travelInfo.toMapX - travelInfo.fromMapX) * p) - 50;
-          wz    = (travelInfo.fromMapY + (travelInfo.toMapY - travelInfo.fromMapY) * p) - 50;
+          wx    = ((travelInfo.fromMapX + (travelInfo.toMapX - travelInfo.fromMapX) * p) - 50) * MAP_SCALE;
+          wz    = ((travelInfo.fromMapY + (travelInfo.toMapY - travelInfo.fromMapY) * p) - 50) * MAP_SCALE;
         } else {
           wx = staticWx;
           wz = staticWz;
@@ -52,8 +52,8 @@ export default function PlayerMarker({ mapX, mapY, travelInfo, encounterActive }
         const p       = smoothStep(raw);
         const mx = travelInfo.fromMapX + (travelInfo.toMapX - travelInfo.fromMapX) * p;
         const my = travelInfo.fromMapY + (travelInfo.toMapY - travelInfo.fromMapY) * p;
-        wx    = mx - 50;
-        wz    = my - 50;
+        wx    = (mx - 50) * MAP_SCALE;
+        wz    = (my - 50) * MAP_SCALE;
         baseY = getTerrainHeight(wx, wz);
       } else {
         wx    = staticWx;

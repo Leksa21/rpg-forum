@@ -1,6 +1,6 @@
 import { useMemo, useRef } from 'react';
 import { OrbitControls, Sky } from '@react-three/drei';
-import { getTerrainHeight } from './terrainNoise';
+import { getTerrainHeight, MAP_SCALE } from './terrainNoise';
 import Terrain from './Terrain';
 import CrystalPin from './CrystalPin';
 import PlayerMarker from './PlayerMarker';
@@ -25,8 +25,8 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
   const playerMapY = currentLoc?.mapCoords?.y ?? 50;
 
   const orbitTarget = useMemo(() => {
-    const wx = playerMapX - 50;
-    const wz = playerMapY - 50;
+    const wx = (playerMapX - 50) * MAP_SCALE;
+    const wz = (playerMapY - 50) * MAP_SCALE;
     return [wx, Math.max(0, getTerrainHeight(wx, wz)) + 1, wz];
   }, [playerMapX, playerMapY]);
 
@@ -50,12 +50,12 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
       <directionalLight position={[60, 80, -60]} intensity={1.5} color="#fff5d0" />
       <hemisphereLight args={['#87ceeb', '#4a7a2e', 0.35]} />
 
-      {/* Atmospheric haze — sky blue, starts far enough to not obscure terrain */}
-      <fog attach="fog" args={['#87c4e8', 180, 400]} />
+      {/* Atmospheric haze — starts well beyond terrain centre, fades distant edges */}
+      <fog attach="fog" args={['#87c4e8', 420, 900]} />
 
-      {/* Ocean plane — sized to cover visible area around the 160×160 terrain */}
+      {/* Ocean plane — larger than the 520-unit terrain plane */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.75, 0]}>
-        <planeGeometry args={[600, 600]} />
+        <planeGeometry args={[2000, 2000]} />
         <meshStandardMaterial color="#1a5e90" roughness={0.55} metalness={0.2} />
       </mesh>
 
@@ -99,8 +99,8 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
         enableRotate={false}
         enableDamping
         dampingFactor={0.08}
-        minDistance={18}
-        maxDistance={220}
+        minDistance={30}
+        maxDistance={900}
         enablePan
         panSpeed={1.0}
         mouseButtons={{ LEFT: 2, MIDDLE: 1, RIGHT: 2 }}

@@ -2,7 +2,7 @@ import { useRef, useState, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { getTerrainHeight } from './terrainNoise';
+import { getTerrainHeight, MAP_SCALE } from './terrainNoise';
 
 const GOLD   = new THREE.Color('#d4a843');
 const VIOLET = new THREE.Color('#8b5cf6');
@@ -13,9 +13,9 @@ export default function CrystalPin({ location, mapX, mapY, isHere, onClick }) {
   const [hovered, setHovered] = useState(false);
 
   const color    = isHere ? GOLD : VIOLET;
-  const terrainY = useMemo(() => getTerrainHeight(mapX - 50, mapY - 50), [mapX, mapY]);
-  const wx = mapX - 50;
-  const wz = mapY - 50;
+  const wx       = (mapX - 50) * MAP_SCALE;
+  const wz       = (mapY - 50) * MAP_SCALE;
+  const terrainY = useMemo(() => getTerrainHeight(wx, wz), [wx, wz]);
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;

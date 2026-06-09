@@ -1,6 +1,9 @@
-const SIZE  = 100;
-const SCALE = 6;
-const MAX_H = 14;
+// MAP_SCALE: visual world units per game-coord unit (game coords: 0-100)
+export const MAP_SCALE = 4;
+
+const SIZE  = 100 * MAP_SCALE; // 400 — world units for full map (game coords 0-100)
+const SCALE = 10;              // noise frequency (higher = more terrain detail)
+const MAX_H = 24;              // max peak height in world units
 
 function hash(x, y, s) {
   let h = (s | 0) ^ ((x | 0) * 374761393) ^ ((y | 0) * 668265263);
@@ -29,21 +32,17 @@ export function fbm(nx, nz, seed, octaves = 5) {
   return v / total;
 }
 
-// Two land masses with jagged coasts from low-frequency noise
+// Two continents — same shape in normalized space, just physically 4x larger
 function continentMask(nx, nz) {
   const jitter = fbm(nx * 2.8, nz * 2.8, 7331) * 0.22;
 
-  // Western continent — taller, slightly irregular
   const d1x = (nx - 0.25) * 2.7, d1z = (nz - 0.50) * 1.9;
   const c1 = Math.max(0, 1 - Math.sqrt(d1x * d1x + d1z * d1z) + jitter);
 
-  // Eastern continent — a bit wider at base
   const d2x = (nx - 0.75) * 2.5, d2z = (nz - 0.50) * 1.7;
   const c2 = Math.max(0, 1 - Math.sqrt(d2x * d2x + d2z * d2z) + jitter * 0.9);
 
-  const combined = Math.max(c1, c2);
-  // Sharpen land/ocean boundary
-  return Math.min(1, Math.max(0, combined)) ** 1.6;
+  return Math.min(1, Math.max(0, Math.max(c1, c2))) ** 1.6;
 }
 
 export function getTerrainHeight(worldX, worldZ, seed = 42) {
@@ -51,6 +50,5 @@ export function getTerrainHeight(worldX, worldZ, seed = 42) {
   const nz = (worldZ + SIZE / 2) / SIZE;
   const noise = fbm(nx * SCALE, nz * SCALE, seed);
   const mask  = continentMask(nx, nz);
-  // Positive height over land, slightly negative under water
   return noise * mask * MAX_H - (1 - mask) * 2.2;
 }
