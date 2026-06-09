@@ -3,9 +3,9 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 const MAX_DISCOVERED  = 30;
-const REVEAL_RADIUS   = 18;
-const DISCOVER_RADIUS = 12;
-const SOFT_EDGE       = 4;
+const REVEAL_RADIUS   = 8;
+const DISCOVER_RADIUS = 5;
+const SOFT_EDGE       = 2;
 
 function smoothStep(t) {
   return t * t * (3 - 2 * t);
@@ -98,7 +98,7 @@ export default function FogPlane({ mapX, mapY, travelInfo, discoveredLocations }
 
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.4, 0]} renderOrder={10}>
-      <planeGeometry args={[300, 300]} />
+      <planeGeometry args={[800, 800]} />
       <shaderMaterial
         ref={matRef}
         vertexShader={vertexShader}

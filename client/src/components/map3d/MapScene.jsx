@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react';
-import { OrbitControls, Stars } from '@react-three/drei';
+import { OrbitControls, Sky } from '@react-three/drei';
 import { getTerrainHeight } from './terrainNoise';
 import Terrain from './Terrain';
 import CrystalPin from './CrystalPin';
@@ -27,29 +27,46 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
   const orbitTarget = useMemo(() => {
     const wx = playerMapX - 50;
     const wz = playerMapY - 50;
-    return [wx, getTerrainHeight(wx, wz) + 2, wz];
+    return [wx, Math.max(0, getTerrainHeight(wx, wz)) + 1, wz];
   }, [playerMapX, playerMapY]);
 
   return (
     <>
-      <ambientLight intensity={0.22} color="#7060b8" />
+      {/* Atmospheric sky — twilight/dusk look, no more "space" background */}
+      <Sky
+        distance={450000}
+        sunPosition={[80, 6, -160]}
+        turbidity={14}
+        rayleigh={1.8}
+        mieCoefficient={0.004}
+        mieDirectionalG={0.88}
+      />
+
+      {/* Lighting */}
+      <ambientLight intensity={0.28} color="#8070c0" />
       <directionalLight
-        position={[28, 52, 18]}
-        intensity={1.05}
-        color="#ffe4a0"
+        position={[28, 55, -35]}
+        intensity={1.1}
+        color="#ffd890"
         castShadow
         shadow-mapSize={[1024, 1024]}
       />
-      <pointLight position={[-18, 38, -18]} intensity={0.3} color="#5535a8" />
+      <pointLight position={[-20, 38, -18]} intensity={0.28} color="#5535aa" />
 
-      <fog attach="fog" args={['#07051a', 52, 115]} />
-      <Stars radius={90} depth={45} count={2400} factor={3} saturation={0.25} fade speed={0.35} />
+      {/* Atmospheric haze matching sky horizon */}
+      <fog attach="fog" args={['#1e1640', 70, 145]} />
+
+      {/* Deep ocean plane visible around and between continents */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.7, 0]}>
+        <planeGeometry args={[500, 500]} />
+        <meshStandardMaterial color="#071428" roughness={0.7} metalness={0.15} />
+      </mesh>
 
       <Terrain seed={42} />
 
       {locations.map(loc => {
-        const mx = loc.mapCoords?.x ?? 50;
-        const my = loc.mapCoords?.y ?? 50;
+        const mx   = loc.mapCoords?.x ?? 50;
+        const my   = loc.mapCoords?.y ?? 50;
         const isHere = !!currentLoc && toId(loc._id) === toId(currentLoc._id);
         return (
           <CrystalPin
@@ -63,7 +80,9 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
         );
       })}
 
-      {currentLoc && <PlayerMarker mapX={playerMapX} mapY={playerMapY} travelInfo={travelInfo} />}
+      {currentLoc && (
+        <PlayerMarker mapX={playerMapX} mapY={playerMapY} travelInfo={travelInfo} />
+      )}
 
       {otherPlayers.map(p => (
         <OtherPlayerDot key={p.charId} player={p} />
@@ -76,17 +95,18 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
         discoveredLocations={discoveredLocations}
       />
 
+      {/* Pan with right-click, zoom with scroll — rotation disabled */}
       <OrbitControls
         ref={controlsRef}
         target={orbitTarget}
+        enableRotate={false}
         enableDamping
-        dampingFactor={0.07}
-        minDistance={6}
-        maxDistance={72}
-        minPolarAngle={0.22}
-        maxPolarAngle={Math.PI / 2.15}
+        dampingFactor={0.08}
+        minDistance={8}
+        maxDistance={80}
         enablePan
-        panSpeed={0.9}
+        panSpeed={1.1}
+        mouseButtons={{ LEFT: null, MIDDLE: 1, RIGHT: 2 }}
       />
     </>
   );
