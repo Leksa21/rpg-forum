@@ -2,6 +2,8 @@ import { useMemo, useRef } from 'react';
 import { OrbitControls, Sky } from '@react-three/drei';
 import { getTerrainHeight, MAP_SCALE } from './terrainNoise';
 import Terrain from './Terrain';
+import Rivers from './Rivers';
+import Lakes from './Lakes';
 import CrystalPin from './CrystalPin';
 import PlayerMarker from './PlayerMarker';
 import FogPlane from './FogPlane';
@@ -60,6 +62,8 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
       </mesh>
 
       <Terrain seed={42} />
+      <Rivers seed={42} />
+      <Lakes seed={42} />
 
       {locations.map(loc => {
         const mx     = loc.mapCoords?.x ?? 50;

@@ -3,7 +3,7 @@ export const MAP_SCALE = 4;
 
 const SIZE  = 100 * MAP_SCALE; // 400 — world units for full map (game coords 0-100)
 const SCALE = 10;              // noise frequency (higher = more terrain detail)
-const MAX_H = 24;              // max peak height in world units
+const MAX_H = 28;              // max peak height in world units
 
 function hash(x, y, s) {
   let h = (s | 0) ^ ((x | 0) * 374761393) ^ ((y | 0) * 668265263);
