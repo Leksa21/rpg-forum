@@ -43,7 +43,7 @@ export default function OtherPlayerDot({ player }) {
       <pointLight color={SILVER} intensity={1.2} distance={6} position={[0, 0.3, 0]} />
 
       {hovered && (
-        <Html position={[0, 2.4, 0]} center distanceFactor={20} style={{ pointerEvents: 'none' }}>
+        <Html position={[0, 2.4, 0]} center style={{ pointerEvents: 'none' }}>
           <div className="wm3d-label">
             ⚔ {player.name}
             {player.class && (

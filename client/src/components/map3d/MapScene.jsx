@@ -50,8 +50,8 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
       <directionalLight position={[28, 55, -35]} intensity={1.1} color="#ffd890" />
       <pointLight position={[-20, 38, -18]} intensity={0.28} color="#5535aa" />
 
-      {/* Fog starts close — hides terrain edges before you see them */}
-      <fog attach="fog" args={['#12102a', 42, 88]} />
+      {/* Fog pushed far — full terrain visible */}
+      <fog attach="fog" args={['#12102a', 200, 400]} />
 
       {/* Ocean — large enough to fill any gap around terrain */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.7, 0]}>

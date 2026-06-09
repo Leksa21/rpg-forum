@@ -74,7 +74,6 @@ export default function CrystalPin({ location, mapX, mapY, isHere, onClick }) {
         <Html
           position={[0, 4.8, 0]}
           center
-          distanceFactor={20}
           style={{ pointerEvents: 'none' }}
         >
           <div className="wm3d-label" data-here={isHere}>
