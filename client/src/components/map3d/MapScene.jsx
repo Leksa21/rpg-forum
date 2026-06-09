@@ -32,7 +32,10 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
 
   return (
     <>
-      {/* Atmospheric sky — twilight/dusk look, no more "space" background */}
+      {/* Solid canvas background — prevents transparent/void edges */}
+      <color attach="background" args={['#12102a']} />
+
+      {/* Atmospheric sky (dusk/twilight) */}
       <Sky
         distance={450000}
         sunPosition={[80, 6, -160]}
@@ -42,31 +45,25 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
         mieDirectionalG={0.88}
       />
 
-      {/* Lighting */}
-      <ambientLight intensity={0.28} color="#8070c0" />
-      <directionalLight
-        position={[28, 55, -35]}
-        intensity={1.1}
-        color="#ffd890"
-        castShadow
-        shadow-mapSize={[1024, 1024]}
-      />
+      {/* Lighting — no shadows (avoids deprecation warning) */}
+      <ambientLight intensity={0.32} color="#8070c0" />
+      <directionalLight position={[28, 55, -35]} intensity={1.1} color="#ffd890" />
       <pointLight position={[-20, 38, -18]} intensity={0.28} color="#5535aa" />
 
-      {/* Atmospheric haze matching sky horizon */}
-      <fog attach="fog" args={['#1e1640', 70, 145]} />
+      {/* Fog starts close — hides terrain edges before you see them */}
+      <fog attach="fog" args={['#12102a', 42, 88]} />
 
-      {/* Deep ocean plane visible around and between continents */}
+      {/* Ocean — large enough to fill any gap around terrain */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.7, 0]}>
-        <planeGeometry args={[500, 500]} />
-        <meshStandardMaterial color="#071428" roughness={0.7} metalness={0.15} />
+        <planeGeometry args={[1200, 1200]} />
+        <meshStandardMaterial color="#060e1e" roughness={0.8} metalness={0.1} />
       </mesh>
 
       <Terrain seed={42} />
 
       {locations.map(loc => {
-        const mx   = loc.mapCoords?.x ?? 50;
-        const my   = loc.mapCoords?.y ?? 50;
+        const mx     = loc.mapCoords?.x ?? 50;
+        const my     = loc.mapCoords?.y ?? 50;
         const isHere = !!currentLoc && toId(loc._id) === toId(currentLoc._id);
         return (
           <CrystalPin
@@ -95,15 +92,15 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
         discoveredLocations={discoveredLocations}
       />
 
-      {/* Pan with right-click, zoom with scroll — rotation disabled */}
+      {/* Right-click = pan, scroll = zoom, rotation disabled */}
       <OrbitControls
         ref={controlsRef}
         target={orbitTarget}
         enableRotate={false}
         enableDamping
         dampingFactor={0.08}
-        minDistance={8}
-        maxDistance={80}
+        minDistance={10}
+        maxDistance={75}
         enablePan
         panSpeed={1.1}
         mouseButtons={{ LEFT: null, MIDDLE: 1, RIGHT: 2 }}

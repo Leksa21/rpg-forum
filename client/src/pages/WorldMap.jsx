@@ -281,7 +281,6 @@ export default function WorldMap() {
             <Canvas
               camera={{ position: initialCameraPos, fov: 60, near: 0.5, far: 300 }}
               gl={{ antialias: true, alpha: false }}
-              shadows
             >
               <Suspense fallback={null}>
                 <MapScene
