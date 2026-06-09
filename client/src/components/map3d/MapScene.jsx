@@ -12,7 +12,7 @@ function toId(v) {
   return typeof v === 'object' && v._id ? v._id.toString() : v?.toString() ?? null;
 }
 
-export default function MapScene({ locations, currentLocId, travelInfo, discoveredLocations, otherPlayers, onSelectLocation }) {
+export default function MapScene({ locations, currentLocId, travelInfo, discoveredLocations, otherPlayers, encounterActive, onSelectLocation }) {
   const controlsRef = useRef();
 
   const currentLoc = useMemo(() => {
@@ -78,7 +78,7 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
       })}
 
       {currentLoc && (
-        <PlayerMarker mapX={playerMapX} mapY={playerMapY} travelInfo={travelInfo} />
+        <PlayerMarker mapX={playerMapX} mapY={playerMapY} travelInfo={travelInfo} encounterActive={encounterActive} />
       )}
 
       {otherPlayers.map(p => (

@@ -9,10 +9,11 @@ function smoothStep(t) {
   return t * t * (3 - 2 * t);
 }
 
-export default function PlayerMarker({ mapX, mapY, travelInfo }) {
-  const groupRef = useRef();
-  const ring1Ref = useRef();
-  const ring2Ref = useRef();
+export default function PlayerMarker({ mapX, mapY, travelInfo, encounterActive }) {
+  const groupRef    = useRef();
+  const ring1Ref    = useRef();
+  const ring2Ref    = useRef();
+  const frozenRef   = useRef(null); // snapshot position when encounter starts
 
   const staticWx    = mapX - 50;
   const staticWz    = mapY - 50;
@@ -22,20 +23,43 @@ export default function PlayerMarker({ mapX, mapY, travelInfo }) {
     const t = clock.elapsedTime;
     let wx, wz, baseY;
 
-    if (travelInfo) {
-      const total   = new Date(travelInfo.arrivalTime) - new Date(travelInfo.departureTime);
-      const elapsed = Date.now() - new Date(travelInfo.departureTime);
-      const raw     = Math.min(1, Math.max(0, elapsed / total));
-      const p       = smoothStep(raw);
-      const mx = travelInfo.fromMapX + (travelInfo.toMapX - travelInfo.fromMapX) * p;
-      const my = travelInfo.fromMapY + (travelInfo.toMapY - travelInfo.fromMapY) * p;
-      wx    = mx - 50;
-      wz    = my - 50;
-      baseY = getTerrainHeight(wx, wz);
+    if (encounterActive) {
+      if (!frozenRef.current) {
+        // Capture exact position at the moment the encounter starts
+        if (travelInfo) {
+          const total   = new Date(travelInfo.arrivalTime) - new Date(travelInfo.departureTime);
+          const elapsed = Date.now() - new Date(travelInfo.departureTime);
+          const raw     = Math.min(1, Math.max(0, elapsed / total));
+          const p       = smoothStep(raw);
+          wx    = (travelInfo.fromMapX + (travelInfo.toMapX - travelInfo.fromMapX) * p) - 50;
+          wz    = (travelInfo.fromMapY + (travelInfo.toMapY - travelInfo.fromMapY) * p) - 50;
+        } else {
+          wx = staticWx;
+          wz = staticWz;
+        }
+        baseY = getTerrainHeight(wx, wz);
+        frozenRef.current = { wx, wz, baseY };
+      }
+      wx    = frozenRef.current.wx;
+      wz    = frozenRef.current.wz;
+      baseY = frozenRef.current.baseY;
     } else {
-      wx    = staticWx;
-      wz    = staticWz;
-      baseY = staticBaseY;
+      frozenRef.current = null; // clear snapshot when encounter ends
+      if (travelInfo) {
+        const total   = new Date(travelInfo.arrivalTime) - new Date(travelInfo.departureTime);
+        const elapsed = Date.now() - new Date(travelInfo.departureTime);
+        const raw     = Math.min(1, Math.max(0, elapsed / total));
+        const p       = smoothStep(raw);
+        const mx = travelInfo.fromMapX + (travelInfo.toMapX - travelInfo.fromMapX) * p;
+        const my = travelInfo.fromMapY + (travelInfo.toMapY - travelInfo.fromMapY) * p;
+        wx    = mx - 50;
+        wz    = my - 50;
+        baseY = getTerrainHeight(wx, wz);
+      } else {
+        wx    = staticWx;
+        wz    = staticWz;
+        baseY = staticBaseY;
+      }
     }
 
     if (groupRef.current) {

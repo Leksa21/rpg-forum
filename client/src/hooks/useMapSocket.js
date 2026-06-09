@@ -25,9 +25,12 @@ export function useMapSocket(token, mapX, mapY, travelInfo, myCharId) {
   const [otherPlayers, setOtherPlayers] = useState([]);
   const [encounter, setEncounter]       = useState(CLEAR_ENCOUNTER);
 
-  const travelRef = useRef(travelInfo);
-  const posRef    = useRef({ mapX, mapY });
-  const socketRef = useRef(null);
+  const travelRef           = useRef(travelInfo);
+  const posRef              = useRef({ mapX, mapY });
+  const socketRef           = useRef(null);
+  const encounterActiveRef  = useRef(false);
+  const frozenOpponentIdRef = useRef(null);
+
   travelRef.current = travelInfo;
   posRef.current    = { mapX, mapY };
 
@@ -35,6 +38,8 @@ export function useMapSocket(token, mapX, mapY, travelInfo, myCharId) {
     if (!socketRef.current) return;
     socketRef.current.emit('map:encounter:respond', { action });
     if (action === 'flee') {
+      encounterActiveRef.current  = false;
+      frozenOpponentIdRef.current = null;
       setEncounter(CLEAR_ENCOUNTER);
     } else {
       setEncounter(prev => ({ ...prev, waiting: true }));
@@ -48,6 +53,8 @@ export function useMapSocket(token, mapX, mapY, travelInfo, myCharId) {
     socketRef.current = socket;
 
     const emitPosition = () => {
+      // Freeze position broadcasts during an encounter
+      if (encounterActiveRef.current) return;
       const [mx, my] = computeCurrentMapPos(
         posRef.current.mapX,
         posRef.current.mapY,
@@ -59,16 +66,33 @@ export function useMapSocket(token, mapX, mapY, travelInfo, myCharId) {
     socket.on('connect', emitPosition);
 
     socket.on('map:positions', (positions) => {
-      setOtherPlayers(Object.values(positions).filter(p => p.charId !== myCharId));
+      setOtherPlayers(prev => {
+        const frozenId = frozenOpponentIdRef.current;
+        const next = Object.values(positions).filter(p => p.charId !== myCharId);
+        if (!frozenId) return next;
+        // Keep frozen opponent at their last known position
+        return next.map(p => {
+          if (p.charId === frozenId) {
+            return prev.find(pp => pp.charId === frozenId) ?? p;
+          }
+          return p;
+        });
+      });
     });
 
     socket.on('map:encounter', ({ opponent }) => {
+      encounterActiveRef.current  = true;
+      frozenOpponentIdRef.current = opponent.charId;
       setEncounter({ active: true, opponent, waiting: false, result: null });
     });
 
     socket.on('map:encounter:result', ({ outcome, myAction, theirAction }) => {
       setEncounter(prev => ({ ...prev, waiting: false, result: { outcome, myAction, theirAction } }));
-      setTimeout(() => setEncounter(CLEAR_ENCOUNTER), 4000);
+      setTimeout(() => {
+        encounterActiveRef.current  = false;
+        frozenOpponentIdRef.current = null;
+        setEncounter(CLEAR_ENCOUNTER);
+      }, 4000);
     });
 
     const interval = setInterval(emitPosition, EMIT_INTERVAL);

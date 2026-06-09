@@ -288,6 +288,7 @@ export default function WorldMap() {
                   travelInfo={travelInfo}
                   discoveredLocations={discoveredLocations}
                   otherPlayers={otherPlayers}
+                  encounterActive={encounter.active}
                   onSelectLocation={handleSelect}
                 />
               </Suspense>
