@@ -10,7 +10,8 @@ import WorldMap          from './pages/WorldMap';
 import ForumList         from './pages/ForumList';
 import PostDetail        from './pages/PostDetail';
 import CreatePost        from './pages/CreatePost';
-import CharacterProfile  from './pages/CharacterProfile';
+import CharacterProfile       from './pages/CharacterProfile';
+import PublicCharacterProfile from './pages/PublicCharacterProfile';
 import QuestBoard        from './pages/QuestBoard';
 import AdminPanel        from './pages/AdminPanel';
 import WorldAreas        from './pages/WorldAreas';
@@ -79,6 +80,7 @@ export default function App() {
           <Route path="/forum/new"         element={<DashboardRoute><CreatePost /></DashboardRoute>} />
           <Route path="/forum/:id"         element={<DashboardRoute><PostDetail /></DashboardRoute>} />
           <Route path="/character"         element={<DashboardRoute><CharacterProfile /></DashboardRoute>} />
+          <Route path="/character/:id"    element={<DashboardRoute><PublicCharacterProfile /></DashboardRoute>} />
           <Route path="/quests"            element={<DashboardRoute><QuestBoard /></DashboardRoute>} />
           <Route path="/admin"             element={<DashboardRoute><AdminPanel /></DashboardRoute>} />
           <Route path="/world/areas"       element={<DashboardRoute><WorldAreas /></DashboardRoute>} />

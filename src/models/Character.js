@@ -60,6 +60,16 @@ const characterSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    fullBodyAvatar: {
+      type: String,
+      maxlength: [500, 'Image URL cannot exceed 500 characters'],
+      default: null,
+    },
+    tagline: {
+      type: String,
+      maxlength: [150, 'Tagline cannot exceed 150 characters'],
+      default: '',
+    },
     isDead: {
       type: Boolean,
       default: false,

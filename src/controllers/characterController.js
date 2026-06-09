@@ -93,6 +93,40 @@ const setupCharacter = async (req, res) => {
   }
 };
 
+const getPublicCharacter = async (req, res) => {
+  try {
+    const character = await Character.findById(req.params.id)
+      .select('name class race level avatar fullBodyAvatar tagline backstory isDead currentLocation createdAt')
+      .populate('currentLocation', 'name icon');
+
+    if (!character) return res.status(404).json({ success: false, error: 'Character not found' });
+    res.json({ success: true, data: character });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+const updateProfile = async (req, res) => {
+  try {
+    const { avatar, tagline, fullBodyAvatar } = req.body;
+
+    const updates = {};
+    if (avatar !== undefined)        updates.avatar        = avatar?.slice(0, 10)  ?? null;
+    if (tagline !== undefined)       updates.tagline       = tagline?.slice(0, 150) ?? '';
+    if (fullBodyAvatar !== undefined) updates.fullBodyAvatar = fullBodyAvatar?.slice(0, 500) ?? null;
+
+    const character = await Character.findOneAndUpdate(
+      { owner: req.userId, isDead: false },
+      updates,
+      { new: true },
+    );
+    if (!character) return res.status(404).json({ success: false, error: 'No character found' });
+    res.json({ success: true, data: character });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 const updateBackstory = async (req, res) => {
   try {
     const { backstory } = req.body;
@@ -108,4 +142,4 @@ const updateBackstory = async (req, res) => {
   }
 };
 
-module.exports = { getMyCharacter, getAllMyCharacters, createCharacter, setupCharacter, updateBackstory, discoverLocation };
+module.exports = { getMyCharacter, getAllMyCharacters, createCharacter, setupCharacter, updateBackstory, updateProfile, getPublicCharacter, discoverLocation };
