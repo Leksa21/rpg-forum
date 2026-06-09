@@ -97,7 +97,7 @@ export default function FogPlane({ mapX, mapY, travelInfo, discoveredLocations }
   });
 
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.4, 0]} renderOrder={10}>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.4, 0]} renderOrder={10} visible={false}>
       <planeGeometry args={[800, 800]} />
       <shaderMaterial
         ref={matRef}
