@@ -202,13 +202,13 @@ export default function WorldMap() {
   const { otherPlayers, encounter, respondToEncounter } = useMapSocket(token, playerMapX, playerMapY, travelInfo, myCharId);
 
   const initialCameraPos = useMemo(() => {
-    if (!locations.length) return [0, 90, 38];
+    if (!locations.length) return [0, 56, 68];
     const loc = locations.find(l => toId(l._id) === currentLocId)
               ?? locations.find(l => l.isStartingLocation)
               ?? locations[0];
     const wx = (loc?.mapCoords?.x ?? 50) - 50;
     const wz = (loc?.mapCoords?.y ?? 50) - 50;
-    return [wx, 90, wz + 38];
+    return [wx, 56, wz + 68];
   }, [locations, currentLocId]);
 
   // Discovery check — runs every 4 seconds, fires once per location
@@ -278,8 +278,7 @@ export default function WorldMap() {
         ) : (
           <div className="wm3d-canvas-wrap">
             <Canvas
-              orthographic
-              camera={{ position: initialCameraPos, zoom: 8, near: 1, far: 800 }}
+              camera={{ position: initialCameraPos, fov: 50, near: 0.5, far: 600 }}
               gl={{ antialias: true, alpha: false }}
             >
               <Suspense fallback={null}>
@@ -322,7 +321,7 @@ export default function WorldMap() {
 
             {/* Controls hint */}
             <div className="wm3d-hint">
-              🖱 Drag to rotate · Scroll to zoom · Right-drag to pan · Click a crystal to travel
+              🖱 Drag to pan · Scroll to zoom · Click a crystal to travel
             </div>
           </div>
         )}

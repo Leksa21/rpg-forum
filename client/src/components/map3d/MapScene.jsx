@@ -32,31 +32,31 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
 
   return (
     <>
-      {/* Solid canvas background — prevents transparent/void edges */}
-      <color attach="background" args={['#12102a']} />
+      {/* Daytime sky blue background */}
+      <color attach="background" args={['#6bb0d8']} />
 
-      {/* Atmospheric sky (dusk/twilight) */}
+      {/* Daytime sky with sun */}
       <Sky
         distance={450000}
-        sunPosition={[80, 6, -160]}
-        turbidity={14}
-        rayleigh={1.8}
-        mieCoefficient={0.004}
-        mieDirectionalG={0.88}
+        sunPosition={[120, 55, -220]}
+        turbidity={5}
+        rayleigh={0.6}
+        mieCoefficient={0.003}
+        mieDirectionalG={0.82}
       />
 
-      {/* Lighting — no shadows (avoids deprecation warning) */}
-      <ambientLight intensity={0.32} color="#8070c0" />
-      <directionalLight position={[28, 55, -35]} intensity={1.1} color="#ffd890" />
-      <pointLight position={[-20, 38, -18]} intensity={0.28} color="#5535aa" />
+      {/* Warm sun + hemisphere (sky/ground) for rich natural lighting */}
+      <ambientLight intensity={0.5} color="#d4e8f4" />
+      <directionalLight position={[60, 80, -60]} intensity={1.5} color="#fff5d0" />
+      <hemisphereLight args={['#87ceeb', '#4a7a2e', 0.35]} />
 
-      {/* Fog pushed far — full terrain visible */}
-      <fog attach="fog" args={['#12102a', 200, 400]} />
+      {/* Atmospheric haze — sky blue, starts far enough to not obscure terrain */}
+      <fog attach="fog" args={['#87c4e8', 180, 400]} />
 
-      {/* Ocean — large enough to fill any gap around terrain */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.7, 0]}>
-        <planeGeometry args={[1200, 1200]} />
-        <meshStandardMaterial color="#060e1e" roughness={0.8} metalness={0.1} />
+      {/* Ocean plane — sized to cover visible area around the 160×160 terrain */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.75, 0]}>
+        <planeGeometry args={[600, 600]} />
+        <meshStandardMaterial color="#1a5e90" roughness={0.55} metalness={0.2} />
       </mesh>
 
       <Terrain seed={42} />
@@ -92,15 +92,15 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
         discoveredLocations={discoveredLocations}
       />
 
-      {/* Left or right drag = pan, scroll = zoom, no rotation */}
+      {/* Drag = pan, scroll = zoom, no rotation */}
       <OrbitControls
         ref={controlsRef}
         target={orbitTarget}
         enableRotate={false}
         enableDamping
         dampingFactor={0.08}
-        minZoom={3}
-        maxZoom={55}
+        minDistance={18}
+        maxDistance={220}
         enablePan
         panSpeed={1.0}
         mouseButtons={{ LEFT: 2, MIDDLE: 1, RIGHT: 2 }}

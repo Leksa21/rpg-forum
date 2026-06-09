@@ -2,19 +2,20 @@ import { useMemo } from 'react';
 import * as THREE from 'three';
 import { getTerrainHeight } from './terrainNoise';
 
-const SIZE = 100;
-const SEGS = 80;
+const SIZE = 160;
+const SEGS = 100;
 
 function heightToRgb(h) {
-  if (h < -1.4) return [0.02, 0.04, 0.16]; // deep ocean
-  if (h < -0.4) return [0.03, 0.07, 0.24]; // ocean
-  if (h <  0.3) return [0.04, 0.11, 0.30]; // shallows / coastal water
-  if (h <  1.0) return [0.06, 0.18, 0.14]; // coastline
-  if (h <  3.5) return [0.09, 0.32, 0.14]; // lowland plains
-  if (h <  6.5) return [0.13, 0.40, 0.17]; // grassland
-  if (h <  9.0) return [0.20, 0.17, 0.32]; // highlands / hills
-  if (h < 12.0) return [0.38, 0.26, 0.44]; // mountains
-  return                [0.72, 0.70, 0.84]; // snow peaks
+  if (h < -1.8) return [0.05, 0.18, 0.42]; // deep ocean
+  if (h < -0.8) return [0.08, 0.27, 0.54]; // ocean
+  if (h < -0.1) return [0.13, 0.39, 0.64]; // shallow coastal water
+  if (h <  0.5) return [0.76, 0.68, 0.46]; // sandy beach/coast
+  if (h <  2.0) return [0.33, 0.56, 0.22]; // coastal grass
+  if (h <  4.5) return [0.24, 0.47, 0.16]; // plains
+  if (h <  7.5) return [0.19, 0.38, 0.12]; // forest/lowland
+  if (h < 10.0) return [0.44, 0.37, 0.20]; // rocky highlands
+  if (h < 12.5) return [0.64, 0.60, 0.55]; // mountain rock
+  return               [0.92, 0.91, 0.90]; // snow peaks
 }
 
 export default function Terrain({ seed = 42 }) {
@@ -39,9 +40,13 @@ export default function Terrain({ seed = 42 }) {
 
     return {
       geometry: geo,
-      material: new THREE.MeshLambertMaterial({ vertexColors: true }),
+      material: new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.85,
+        metalness: 0.0,
+      }),
     };
   }, [seed]);
 
-  return <mesh geometry={geometry} material={material} receiveShadow />;
+  return <mesh geometry={geometry} material={material} />;
 }
