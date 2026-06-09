@@ -10,11 +10,17 @@
     "start": "node server.js",
     "test": "jest",
     "test:client": "cd client && npm run test:run",
-    "test:all": "jest && cd client && npm run test:run"
+    "test:all": "jest && cd client && npm run test:run",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed"
   },
   "jest": {
     "testEnvironment": "node",
-    "testPathIgnorePatterns": ["/node_modules/", "/client/"]
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/client/"
+    ]
   },
   "keywords": [],
   "author": "",
@@ -28,6 +34,7 @@
     "socket.io": "^4.8.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "concurrently": "^10.0.3",
     "jest": "^30.4.2"
   }
