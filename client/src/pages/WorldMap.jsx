@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
 import { useAuth } from '../context/AuthContext';
 import { get, post } from '../lib/api';
+import { toId } from '../lib/utils';
 import { useMapSocket } from '../hooks/useMapSocket';
 import { useTravel } from '../hooks/useTravel';
 import BgScene from '../components/layout/BgScene';
@@ -17,11 +18,6 @@ const DANGER_COLORS = {
 const DANGER_TIME = {
   safe: '30s', low: '1 min', medium: '2 min', high: '5 min', deadly: '10 min',
 };
-
-function toId(v) {
-  if (!v) return null;
-  return typeof v === 'object' && v._id ? v._id.toString() : v?.toString() ?? null;
-}
 
 function useCountdown(arrivalTime) {
   const [secs, setSecs] = useState(0);

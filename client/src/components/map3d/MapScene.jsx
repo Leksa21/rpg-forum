@@ -1,6 +1,7 @@
 import { useMemo, useRef } from 'react';
 import { OrbitControls, Sky } from '@react-three/drei';
 import { getTerrainHeight, MAP_SCALE } from './terrainNoise';
+import { toId } from '../../lib/utils';
 import Terrain from './Terrain';
 import Rivers from './Rivers';
 import Lakes from './Lakes';
@@ -8,11 +9,6 @@ import CrystalPin from './CrystalPin';
 import PlayerMarker from './PlayerMarker';
 import FogPlane from './FogPlane';
 import OtherPlayerDot from './OtherPlayerDot';
-
-function toId(v) {
-  if (!v) return null;
-  return typeof v === 'object' && v._id ? v._id.toString() : v?.toString() ?? null;
-}
 
 export default function MapScene({ locations, currentLocId, travelInfo, discoveredLocations, otherPlayers, encounterActive, onSelectLocation }) {
   const controlsRef = useRef();

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { get } from '../lib/api';
+import { toId } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
 import { useTravel } from '../hooks/useTravel';
 import BgScene from '../components/layout/BgScene';
@@ -13,12 +14,6 @@ const DANGER_CONFIG = {
   high:   { label: 'High',   color: '#e07020' },
   deadly: { label: 'Deadly', color: '#c0392b' },
 };
-
-function toId(v) {
-  if (!v) return null;
-  if (typeof v === 'object' && v._id) return v._id.toString();
-  return v.toString();
-}
 
 export default function WorldAreas() {
   const navigate = useNavigate();

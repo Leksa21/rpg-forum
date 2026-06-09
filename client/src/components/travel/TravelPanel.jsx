@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTravel } from '../../hooks/useTravel';
+import { toId } from '../../lib/utils';
 
 const DANGER_COLORS = { safe: '#4a9a4a', low: '#7aaa44', medium: '#d4ac0d', high: '#e07020', deadly: '#c0392b' };
 const DANGER_TIME   = { safe: '30s', low: '1 min', medium: '2 min', high: '5 min', deadly: '10 min' };
@@ -21,12 +22,6 @@ function useCountdown(arrivalTime) {
   const m = Math.floor(secs / 60);
   const s = secs % 60;
   return m > 0 ? `${m}:${String(s).padStart(2, '0')}` : `${s}s`;
-}
-
-function toId(v) {
-  if (!v) return null;
-  if (typeof v === 'object' && v._id) return v._id.toString();
-  return v.toString();
 }
 
 export default function TravelPanel({ locationId, dangerLevel, isStartingLocation }) {
