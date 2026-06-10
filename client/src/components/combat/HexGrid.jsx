@@ -1,25 +1,27 @@
 import { hexToPixel, hexPoints, CANVAS_W, CANVAS_H, GRID_W, GRID_H } from '../../lib/hexUtils';
 
 const FILL = {
-  normal:     '#13102a',
-  reachable:  '#1a2a44',
-  attackable: '#3a1212',
-  self:       '#d4a843',
-  enemy:      '#cc3333',
+  normal:      '#13102a',
+  reachable:   '#1a2a44',
+  attackable:  '#3a1212',
+  flash:       '#cc2222',
+  self:        '#d4a843',
+  enemy:       '#cc3333',
 };
 
 const STROKE = {
-  normal:     '#2e2550',
-  reachable:  '#4a7acc',
-  attackable: '#cc4444',
+  normal:      '#2e2550',
+  reachable:   '#4a7acc',
+  attackable:  '#cc4444',
+  flash:       '#ff4444',
 };
 
 export default function HexGrid({
   units,
   myCharId,
-  actionMode,
   reachable,
   attackable,
+  attackFlash,
   onHexClick,
 }) {
   const unitMap = {};
@@ -31,23 +33,27 @@ export default function HexGrid({
   const hexes = [];
   for (let r = 0; r < GRID_H; r++) {
     for (let q = 0; q < GRID_W; q++) {
-      const key = `${q},${r}`;
+      const key      = `${q},${r}`;
       const { x, y } = hexToPixel(q, r);
-      const unit     = unitMap[key];
-      const isReach  = reachable?.has(key);
-      const isAtk    = attackable?.has(key);
+      const unit      = unitMap[key];
+      const isReach   = reachable?.has(key);
+      const isAtk     = attackable?.has(key);
+      const isFlash   = attackFlash === key;
 
-      let fill   = FILL.normal;
-      let stroke = STROKE.normal;
+      let fill      = FILL.normal;
+      let stroke    = STROKE.normal;
       let clickable = false;
 
-      if (isAtk && actionMode === 'attack') {
-        fill   = FILL.attackable;
-        stroke = STROKE.attackable;
+      if (isFlash) {
+        fill   = FILL.flash;
+        stroke = STROKE.flash;
+      } else if (isAtk) {
+        fill      = FILL.attackable;
+        stroke    = STROKE.attackable;
         clickable = true;
-      } else if (isReach && actionMode === 'move') {
-        fill   = FILL.reachable;
-        stroke = STROKE.reachable;
+      } else if (isReach) {
+        fill      = FILL.reachable;
+        stroke    = STROKE.reachable;
         clickable = true;
       }
 
@@ -58,7 +64,7 @@ export default function HexGrid({
             fill={fill}
             stroke={stroke}
             strokeWidth="1"
-            className={`cmb-hex${clickable ? ' clickable' : ''}`}
+            className={`cmb-hex${clickable ? ' clickable' : ''}${isFlash ? ' flash' : ''}`}
           />
           {unit && (
             <>

@@ -20,6 +20,17 @@ const unitSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const turnActionSchema = new mongoose.Schema(
+  {
+    type:    { type: String, enum: ['move', 'attack'], required: true },
+    from:    { type: positionSchema, default: null },
+    to:      { type: positionSchema, default: null },
+    damage:  { type: Number, default: null },
+    message: { type: String, default: '' },
+  },
+  { _id: false }
+);
+
 const logEntrySchema = new mongoose.Schema(
   {
     turn:      { type: Number, required: true },
@@ -60,6 +71,8 @@ const battleSchema = new mongoose.Schema(
     log:               [logEntrySchema],
     winner:            { type: mongoose.Schema.Types.ObjectId, ref: 'Character', default: null },
     location:          { type: mongoose.Schema.Types.ObjectId, ref: 'Location',  default: null },
+    lastTurnActions:   { type: [turnActionSchema], default: [] },
+    lastTurnActor:     { type: mongoose.Schema.Types.ObjectId, ref: 'Character', default: null },
   },
   { timestamps: true, optimisticConcurrency: true }
 );

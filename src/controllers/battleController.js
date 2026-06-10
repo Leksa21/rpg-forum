@@ -42,6 +42,7 @@ function populatedBattle(id) {
     { path: 'units.character', select: CHAR_SELECT },
     { path: 'currentTurn',     select: '_id name avatar' },
     { path: 'winner',          select: '_id name avatar' },
+    { path: 'lastTurnActor',   select: '_id name avatar' },
   ]);
 }
 
@@ -351,6 +352,136 @@ const endTurn = async (req, res) => {
   }
 };
 
+// POST /api/battles/:id/submit-turn
+const submitTurn = async (req, res) => {
+  try {
+    const { actions } = req.body;
+    if (!Array.isArray(actions)) {
+      return res.status(400).json({ success: false, error: 'actions array required' });
+    }
+
+    const battle = await Battle.findById(req.params.id)
+      .populate('units.character', CHAR_SELECT);
+    if (!battle) return res.status(404).json({ success: false, error: 'Battle not found' });
+    if (battle.status !== 'active') {
+      return res.status(400).json({ success: false, error: 'Battle is not active' });
+    }
+
+    const myUnit = battle.units.find(u => String(u.user) === String(req.userId));
+    if (!myUnit) return res.status(403).json({ success: false, error: 'Not a participant' });
+    if (!myUnit.character._id.equals(battle.currentTurn)) {
+      return res.status(400).json({ success: false, error: 'Not your turn' });
+    }
+
+    const enemyUnit = battle.units.find(u => String(u.user) !== String(req.userId));
+    if (!enemyUnit) return res.status(500).json({ success: false, error: 'Battle state corrupted' });
+
+    // Simulate all actions sequentially, tracking in-progress position/AP
+    let simPos = { q: myUnit.position.q, r: myUnit.position.r };
+    let simAP  = myUnit.ap;
+    let totalDamage = 0;
+    const processed = [];
+
+    for (let i = 0; i < actions.length; i++) {
+      const action = actions[i];
+
+      if (action.type === 'move') {
+        const to = action.to;
+        if (!to || typeof to.q !== 'number' || typeof to.r !== 'number') {
+          return res.status(400).json({ success: false, error: `Action ${i}: move requires {to:{q,r}}` });
+        }
+        if (to.q < 0 || to.q >= battle.gridWidth || to.r < 0 || to.r >= battle.gridHeight) {
+          return res.status(400).json({ success: false, error: `Action ${i}: move target out of bounds` });
+        }
+        if (enemyUnit.position.q === to.q && enemyUnit.position.r === to.r) {
+          return res.status(400).json({ success: false, error: `Action ${i}: target hex is occupied` });
+        }
+        const dist = hexDistance(simPos, to);
+        if (dist === 0) {
+          return res.status(400).json({ success: false, error: `Action ${i}: already at target` });
+        }
+        if (dist > simAP) {
+          return res.status(400).json({ success: false, error: `Action ${i}: not enough AP (need ${dist}, have ${simAP})` });
+        }
+        processed.push({
+          type: 'move',
+          from: { q: simPos.q, r: simPos.r },
+          to:   { q: to.q,     r: to.r },
+          message: `${myUnit.name} moved to (${to.q}, ${to.r}).`,
+        });
+        simPos = { q: to.q, r: to.r };
+        simAP -= dist;
+
+      } else if (action.type === 'attack') {
+        if (simAP < 2) {
+          return res.status(400).json({ success: false, error: `Action ${i}: not enough AP for attack` });
+        }
+        const dist = hexDistance(simPos, enemyUnit.position);
+        if (dist > 1) {
+          return res.status(400).json({ success: false, error: `Action ${i}: enemy not adjacent (distance: ${dist})` });
+        }
+        const damage = calcDamage(myUnit.character);
+        totalDamage += damage;
+        processed.push({
+          type:    'attack',
+          from:    { q: simPos.q,              r: simPos.r },
+          to:      { q: enemyUnit.position.q,  r: enemyUnit.position.r },
+          damage,
+          message: `${myUnit.name} attacked ${enemyUnit.name} for ${damage} damage.`,
+        });
+        simAP -= 2;
+
+      } else {
+        return res.status(400).json({ success: false, error: `Action ${i}: unknown type '${action.type}'` });
+      }
+    }
+
+    // Apply all state changes at once (damage resolves at end of turn)
+    myUnit.position = simPos;
+    myUnit.ap       = simAP;
+    enemyUnit.hp    = Math.max(0, enemyUnit.hp - totalDamage);
+
+    // Store replay data for opponent to watch
+    battle.lastTurnActions = processed;
+    battle.lastTurnActor   = myUnit.character._id;
+
+    // Add summary log entry
+    const summary = processed.length
+      ? processed.map(a => a.message).join(' ')
+      : `${myUnit.name} passed their turn.`;
+    battle.log.push({
+      turn:      battle.turnNumber,
+      actor:     myUnit.character._id,
+      action:    'end_turn',
+      message:   summary,
+      timestamp: new Date(),
+    });
+
+    if (enemyUnit.hp <= 0) {
+      battle.status = 'completed';
+      battle.winner = myUnit.character._id;
+      battle.log.push({
+        turn:      battle.turnNumber,
+        actor:     myUnit.character._id,
+        action:    'end_turn',
+        message:   `${enemyUnit.name} has been defeated! ${myUnit.name} wins!`,
+        timestamp: new Date(),
+      });
+    } else {
+      battle.currentTurn  = enemyUnit.character._id;
+      enemyUnit.ap        = 6;
+      battle.turnNumber  += 1;
+      battle.turnDeadline = new Date(Date.now() + battle.turnDeadlineHours * 3600 * 1000);
+    }
+
+    await battle.save();
+    const populated = await populatedBattle(battle._id);
+    res.json({ success: true, data: populated });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 // POST /api/battles/:id/surrender
 const surrender = async (req, res) => {
   try {
@@ -391,4 +522,5 @@ module.exports = {
   basicAttack,
   endTurn,
   surrender,
+  submitTurn,
 };
