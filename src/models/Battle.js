@@ -7,26 +7,52 @@ const positionSchema = new mongoose.Schema(
 
 const unitSchema = new mongoose.Schema(
   {
-    character: { type: mongoose.Schema.Types.ObjectId, ref: 'Character', required: true },
-    user:      { type: mongoose.Schema.Types.ObjectId, ref: 'User',      required: true },
-    side:      { type: String, enum: ['attacker', 'defender'], required: true },
-    name:      { type: String, required: true },
-    avatar:    { type: String, default: null },
-    position:  { type: positionSchema, required: true },
-    hp:        { type: Number, required: true },
-    maxHp:     { type: Number, required: true },
-    ap:        { type: Number, default: 6 },
+    character:    { type: mongoose.Schema.Types.ObjectId, ref: 'Character', required: true },
+    user:         { type: mongoose.Schema.Types.ObjectId, ref: 'User',      required: true },
+    side:         { type: String, enum: ['attacker', 'defender'], required: true },
+    name:         { type: String, required: true },
+    avatar:       { type: String, default: null },
+    position:     { type: positionSchema, required: true },
+    hp:           { type: Number, required: true },
+    maxHp:        { type: Number, required: true },
+    ap:           { type: Number, default: 6 },
+    mana:         { type: Number, default: 0 },
+    maxMana:      { type: Number, default: 0 },
+    energy:       { type: Number, default: 20 },
+    maxEnergy:    { type: Number, default: 20 },
+    knownSpells:  { type: [String], default: [] },
+    pendingApMod: { type: Number, default: 0 },
+  },
+  { _id: false }
+);
+
+const zoneSchema = new mongoose.Schema(
+  {
+    spellId:        { type: String, required: true },
+    ownerCharacter: { type: mongoose.Schema.Types.ObjectId, ref: 'Character', required: true },
+    hexes:          { type: [positionSchema], default: [] },
+    damage:         { type: Number, default: 0 },
+    turnsLeft:      { type: Number, required: true },
+    name:           { type: String, default: '' },
+    icon:           { type: String, default: '' },
+    color:          { type: String, default: '' },
   },
   { _id: false }
 );
 
 const turnActionSchema = new mongoose.Schema(
   {
-    type:    { type: String, enum: ['move', 'attack'], required: true },
-    from:    { type: positionSchema, default: null },
-    to:      { type: positionSchema, default: null },
-    damage:  { type: Number, default: null },
-    message: { type: String, default: '' },
+    type:       { type: String, enum: ['move', 'attack', 'cast', 'zone_tick'], required: true },
+    from:       { type: positionSchema, default: null },
+    to:         { type: positionSchema, default: null },
+    damage:     { type: Number, default: null },
+    message:    { type: String, default: '' },
+    spellId:    { type: String, default: null },
+    target:     { type: positionSchema, default: null },
+    spellKind:  { type: String, default: null },
+    heal:       { type: Number, default: null },
+    hexes:      { type: [positionSchema], default: undefined },
+    isReaction: { type: Boolean, default: false },
   },
   { _id: false }
 );
@@ -37,7 +63,7 @@ const logEntrySchema = new mongoose.Schema(
     actor:     { type: mongoose.Schema.Types.ObjectId, ref: 'Character' },
     action: {
       type: String,
-      enum: ['move', 'attack', 'end_turn', 'surrender', 'timeout_forfeit', 'battle_start'],
+      enum: ['move', 'attack', 'cast', 'zone_tick', 'end_turn', 'surrender', 'timeout_forfeit', 'battle_start'],
       required: true,
     },
     from:      { type: positionSchema, default: null },
@@ -73,6 +99,7 @@ const battleSchema = new mongoose.Schema(
     location:          { type: mongoose.Schema.Types.ObjectId, ref: 'Location',  default: null },
     lastTurnActions:   { type: [turnActionSchema], default: [] },
     lastTurnActor:     { type: mongoose.Schema.Types.ObjectId, ref: 'Character', default: null },
+    activeZones:       { type: [zoneSchema], default: [] },
   },
   { timestamps: true, optimisticConcurrency: true }
 );

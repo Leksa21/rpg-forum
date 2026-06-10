@@ -9,6 +9,7 @@ const travelRouter    = require('./travel');
 const worldRouter     = require('./world');
 const adminRouter     = require('./admin');
 const battleRouter    = require('./battles');
+const spellRouter     = require('./spells');
 
 router.use('/api/auth',       authRouter);
 router.use('/api/characters', characterRouter);
@@ -18,6 +19,7 @@ router.use('/api/travel',     travelRouter);
 router.use('/api/world',      worldRouter);
 router.use('/api/admin',      adminRouter);
 router.use('/api/battles',    battleRouter);
+router.use('/api/spells',     spellRouter);
 
 router.get('/api', (req, res) => {
   res.json({ success: true, data: 'RPG Forum API v1' });

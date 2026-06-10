@@ -1,6 +1,8 @@
-const Battle    = require('../models/Battle');
-const Character  = require('../models/Character');
-const { Types }  = require('mongoose');
+const Battle                        = require('../models/Battle');
+const Character                     = require('../models/Character');
+const { Types }                     = require('mongoose');
+const { BASE_MANA, BASE_ENERGY }    = require('../data/classResources');
+const { CLASS_SPELLS }              = require('../data/spells');
 
 const BASE_HP = {
   Warrior: 120, Paladin: 110, Ranger: 90,  Rogue: 80,
@@ -18,6 +20,14 @@ const CHAR_SELECT = 'name avatar class race level stats';
 
 function calcMaxHp(char) {
   return (BASE_HP[char.class] || 80) + (char.level - 1) * 10;
+}
+
+function calcMaxMana(char) {
+  return (BASE_MANA[char.class] || 0) + (char.level - 1) * 2;
+}
+
+function calcMaxEnergy(char) {
+  return (BASE_ENERGY[char.class] || 20) + (char.level - 1);
 }
 
 function calcDamage(char) {
@@ -93,33 +103,47 @@ const challengePlayer = async (req, res) => {
       return res.status(400).json({ success: false, error: 'One of these characters is already in a battle' });
     }
 
-    const challengerHp = calcMaxHp(challenger);
-    const targetHp     = calcMaxHp(target);
+    const challengerHp     = calcMaxHp(challenger);
+    const challengerMana   = calcMaxMana(challenger);
+    const challengerEnergy = calcMaxEnergy(challenger);
+    const targetHp         = calcMaxHp(target);
+    const targetMana       = calcMaxMana(target);
+    const targetEnergy     = calcMaxEnergy(target);
 
     const battle = await Battle.create({
       triggerType: 'challenge',
       units: [
         {
-          character: challenger._id,
-          user:      req.userId,
-          side:      'attacker',
-          name:      challenger.name,
-          avatar:    challenger.avatar,
-          position:  { q: 3, r: 14 },
-          hp:        challengerHp,
-          maxHp:     challengerHp,
-          ap:        6,
+          character:   challenger._id,
+          user:        req.userId,
+          side:        'attacker',
+          name:        challenger.name,
+          avatar:      challenger.avatar,
+          position:    { q: 3, r: 14 },
+          hp:          challengerHp,
+          maxHp:       challengerHp,
+          ap:          6,
+          mana:        challengerMana,
+          maxMana:     challengerMana,
+          energy:      challengerEnergy,
+          maxEnergy:   challengerEnergy,
+          knownSpells: CLASS_SPELLS[challenger.class] || [],
         },
         {
-          character: target._id,
-          user:      target.owner,
-          side:      'defender',
-          name:      target.name,
-          avatar:    target.avatar,
-          position:  { q: 26, r: 14 },
-          hp:        targetHp,
-          maxHp:     targetHp,
-          ap:        6,
+          character:   target._id,
+          user:        target.owner,
+          side:        'defender',
+          name:        target.name,
+          avatar:      target.avatar,
+          position:    { q: 26, r: 14 },
+          hp:          targetHp,
+          maxHp:       targetHp,
+          ap:          6,
+          mana:        targetMana,
+          maxMana:     targetMana,
+          energy:      targetEnergy,
+          maxEnergy:   targetEnergy,
+          knownSpells: CLASS_SPELLS[target.class] || [],
         },
       ],
     });

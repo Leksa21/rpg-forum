@@ -86,6 +86,11 @@ const characterSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    mana:        { type: Number, default: 0, min: 0 },
+    maxMana:     { type: Number, default: 0, min: 0 },
+    energy:      { type: Number, default: 20, min: 0 },
+    maxEnergy:   { type: Number, default: 20, min: 0 },
+    knownSpells: { type: [String], default: [] },
     currentLocation: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Location',
