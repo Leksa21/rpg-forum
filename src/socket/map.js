@@ -105,6 +105,8 @@ const setupMap = (io) => {
         const a = players[i], b = players[j];
         const key = pairKey(a.charId, b.charId);
         if (activeEncounters.has(key)) continue;
+        // Skip encounter if both players are at a location (not traveling)
+        if (a.atLocation && b.atLocation) continue;
         const dx = a.mapX - b.mapX, dy = a.mapY - b.mapY;
         if (Math.sqrt(dx * dx + dy * dy) < ENCOUNTER_RADIUS) {
           const timeout = setTimeout(() => resolveEncounter(mapNs, key), 30000);
@@ -127,12 +129,13 @@ const setupMap = (io) => {
 
   mapNs.on('connection', (socket) => {
     connectedPlayers.set(socket.id, {
-      socketId: socket.id,
-      charId:   socket.charId,
-      name:     socket.charName,
-      class:    socket.charClass,
-      mapX:     50,
-      mapY:     50,
+      socketId:   socket.id,
+      charId:     socket.charId,
+      name:       socket.charName,
+      class:      socket.charClass,
+      mapX:       50,
+      mapY:       50,
+      atLocation: true,
     });
 
     socket.on('map:position', (data) => {
@@ -141,8 +144,9 @@ const setupMap = (io) => {
       if (!current) return;
       connectedPlayers.set(socket.id, {
         ...current,
-        mapX: Math.min(100, Math.max(0, data.mapX)),
-        mapY: Math.min(100, Math.max(0, data.mapY)),
+        mapX:       Math.min(100, Math.max(0, data.mapX)),
+        mapY:       Math.min(100, Math.max(0, data.mapY)),
+        atLocation: !!data.atLocation,
       });
     });
 

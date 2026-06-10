@@ -7,24 +7,31 @@ import { getTerrainHeight, MAP_SCALE } from './terrainNoise';
 const GOLD   = new THREE.Color('#d4a843');
 const VIOLET = new THREE.Color('#8b5cf6');
 
+// Heights for each shard
+const H_MAIN = 5.2;
+const H_SEC  = 3.4;
+const H_TER  = 2.4;
+
 export default function CrystalPin({ location, mapX, mapY, isHere, onClick }) {
   const mainRef  = useRef();
   const glowRef  = useRef();
   const [hovered, setHovered] = useState(false);
 
-  const color    = isHere ? GOLD : VIOLET;
-  const wx       = (mapX - 50) * MAP_SCALE;
-  const wz       = (mapY - 50) * MAP_SCALE;
-  const terrainY = useMemo(() => getTerrainHeight(wx, wz), [wx, wz]);
+  const color = isHere ? GOLD : VIOLET;
+  const wx    = (mapX - 50) * MAP_SCALE;
+  const wz    = (mapY - 50) * MAP_SCALE;
+
+  // Embed 0.4 units below terrain so crystals look like they emerge from the ground
+  const terrainY = useMemo(() => getTerrainHeight(wx, wz) - 0.4, [wx, wz]);
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
     if (mainRef.current) {
       const pulse = 0.5 + Math.sin(t * 2.2 + wx * 0.3) * 0.4;
-      mainRef.current.material.emissiveIntensity = isHere ? pulse * 1.5 : pulse * 0.5;
+      mainRef.current.material.emissiveIntensity = isHere ? pulse * 1.5 : pulse * 0.6;
     }
     if (glowRef.current) {
-      glowRef.current.material.opacity = 0.07 + Math.sin(t * 1.4 + wz * 0.2) * 0.06;
+      glowRef.current.material.opacity = 0.09 + Math.sin(t * 1.4 + wz * 0.2) * 0.07;
     }
   });
 
@@ -35,44 +42,49 @@ export default function CrystalPin({ location, mapX, mapY, isHere, onClick }) {
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
     >
-      {/* Ground glow */}
-      <mesh ref={glowRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.06, 0]}>
-        <circleGeometry args={[1.6, 32]} />
-        <meshBasicMaterial color={color} transparent opacity={0.1} side={THREE.DoubleSide} depthWrite={false} />
+      {/* Ground glow ring */}
+      <mesh ref={glowRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.42, 0]}>
+        <circleGeometry args={[2.4, 40]} />
+        <meshBasicMaterial color={color} transparent opacity={0.12} side={THREE.DoubleSide} depthWrite={false} />
       </mesh>
 
-      {/* Main shard */}
-      <mesh ref={mainRef} castShadow>
-        <coneGeometry args={[0.28, 3.4, 6]} />
+      {/* Main shard — base at y=0, tip at y=H_MAIN */}
+      <mesh ref={mainRef} position={[0, H_MAIN / 2, 0]} castShadow>
+        <coneGeometry args={[0.42, H_MAIN, 6]} />
         <meshStandardMaterial
           color={color} emissive={color} emissiveIntensity={0.7}
-          metalness={0.2} roughness={0.1} transparent opacity={0.92}
+          metalness={0.25} roughness={0.08} transparent opacity={0.93}
         />
       </mesh>
 
-      {/* Secondary shard */}
-      <mesh position={[0.3, -0.5, 0.1]} rotation={[0, 0, 0.42]}>
-        <coneGeometry args={[0.17, 2.2, 6]} />
+      {/* Secondary shard — tilted right, base near ground */}
+      <mesh position={[0.45, H_SEC / 2 - 0.1, 0.16]} rotation={[0, 0, 0.38]}>
+        <coneGeometry args={[0.26, H_SEC, 6]} />
         <meshStandardMaterial
-          color={color} emissive={color} emissiveIntensity={0.4}
-          metalness={0.2} roughness={0.15} transparent opacity={0.76}
+          color={color} emissive={color} emissiveIntensity={0.42}
+          metalness={0.2} roughness={0.14} transparent opacity={0.78}
         />
       </mesh>
 
-      {/* Tertiary shard */}
-      <mesh position={[-0.22, -0.7, 0.18]} rotation={[0, 0.5, -0.28]}>
-        <coneGeometry args={[0.12, 1.6, 6]} />
+      {/* Tertiary shard — tilted left */}
+      <mesh position={[-0.34, H_TER / 2 - 0.2, 0.24]} rotation={[0, 0.5, -0.30]}>
+        <coneGeometry args={[0.18, H_TER, 6]} />
         <meshStandardMaterial
-          color={color} emissive={color} emissiveIntensity={0.3}
-          metalness={0.2} roughness={0.2} transparent opacity={0.62}
+          color={color} emissive={color} emissiveIntensity={0.32}
+          metalness={0.2} roughness={0.2} transparent opacity={0.65}
         />
       </mesh>
 
-      <pointLight color={color} intensity={isHere ? 2.5 : 0.7} distance={isHere ? 10 : 5} position={[0, 1.5, 0]} />
+      <pointLight
+        color={color}
+        intensity={isHere ? 3.5 : 1.2}
+        distance={isHere ? 14 : 8}
+        position={[0, H_MAIN * 0.6, 0]}
+      />
 
       {(hovered || isHere) && (
         <Html
-          position={[0, 4.8, 0]}
+          position={[0, H_MAIN + 2.2, 0]}
           center
           style={{ pointerEvents: 'none' }}
         >

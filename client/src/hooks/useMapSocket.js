@@ -66,7 +66,9 @@ export function useMapSocket(token, mapX, mapY, travelInfo, myCharId) {
         posRef.current.mapY,
         travelRef.current
       );
-      socket.emit('map:position', { mapX: mx, mapY: my });
+      // atLocation: true when the player is stationary at a location (not mid-travel)
+      const atLocation = !travelRef.current;
+      socket.emit('map:position', { mapX: mx, mapY: my, atLocation });
     };
 
     socket.on('connect', emitPosition);
