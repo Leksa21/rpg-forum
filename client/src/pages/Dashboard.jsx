@@ -3,7 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import BgScene from '../components/layout/BgScene';
 import Topbar from '../components/layout/Topbar';
 import GlobalChat from '../components/GlobalChat';
-import ActiveAdventurers from '../components/ActiveAdventurers';
+import ActiveAdventurers   from '../components/ActiveAdventurers';
+import PendingChallenges   from '../components/PendingChallenges';
 
 const STAT_LABELS = {
   strength:     { label: 'STR', icon: '⚔️' },
@@ -100,6 +101,9 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+
+          {/* Battle challenges & active battles */}
+          <PendingChallenges />
 
           {/* Active Adventurers */}
           <ActiveAdventurers />
