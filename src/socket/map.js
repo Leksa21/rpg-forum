@@ -105,8 +105,8 @@ const setupMap = (io) => {
         const a = players[i], b = players[j];
         const key = pairKey(a.charId, b.charId);
         if (activeEncounters.has(key)) continue;
-        // Skip encounter if both players are at a location (not traveling)
-        if (a.atLocation && b.atLocation) continue;
+        // Encounter only fires when both players are actively traveling (open world)
+        if (a.atLocation || b.atLocation) continue;
         const dx = a.mapX - b.mapX, dy = a.mapY - b.mapY;
         if (Math.sqrt(dx * dx + dy * dy) < ENCOUNTER_RADIUS) {
           const timeout = setTimeout(() => resolveEncounter(mapNs, key), 30000);
