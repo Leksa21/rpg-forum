@@ -419,6 +419,97 @@
   background: rgba(139,92,246,0.3);
 }
 
+/* ─── Mana / Energy resource bars ─── */
+.cmb-res-bars {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cmb-res-bar-row { display: flex; flex-direction: column; gap: 0.2rem; }
+
+.cmb-res-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.cmb-res-bar-label span { color: var(--text-soft); font-variant-numeric: tabular-nums; }
+
+.cmb-res-bar-track {
+  height: 6px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.cmb-res-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.35s ease;
+}
+
+/* ─── Spell picker ─── */
+.cmb-spell-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.cmb-spell-picker-title {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.1rem;
+}
+
+.cmb-spell-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  background: rgba(139,92,246,0.08);
+  border: 1px solid rgba(139,92,246,0.25);
+  color: var(--text-soft);
+  text-align: left;
+  transition: all 0.15s;
+}
+.cmb-spell-btn:not(:disabled):hover {
+  background: rgba(139,92,246,0.18);
+  border-color: rgba(139,92,246,0.5);
+  color: var(--text);
+}
+.cmb-spell-btn.selected {
+  background: rgba(139,92,246,0.25);
+  border-color: var(--violet);
+  color: var(--text);
+  box-shadow: 0 0 8px rgba(139,92,246,0.3);
+}
+.cmb-spell-btn.unaffordable,
+.cmb-spell-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.cmb-spell-icon { font-size: 1rem; line-height: 1; flex-shrink: 0; }
+.cmb-spell-name { flex: 1; font-weight: 600; }
+.cmb-spell-costs {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.cmb-spell-btn.selected .cmb-spell-costs { color: rgba(139,92,246,0.8); }
+
 /* ─── Queue list ─── */
 .cmb-queue-list {
   background: rgba(255,255,255,0.03);
