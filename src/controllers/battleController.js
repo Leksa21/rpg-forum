@@ -2,7 +2,14 @@ const Battle                        = require('../models/Battle');
 const Character                     = require('../models/Character');
 const { Types }                     = require('mongoose');
 const { BASE_MANA, BASE_ENERGY }    = require('../data/classResources');
-const { CLASS_SPELLS }              = require('../data/spells');
+const { CLASS_SPELLS, getSpell }    = require('../data/spells');
+const spellEngineLib                = require('../services/spellEngine');
+
+// Thin wrapper so submitTurn can call spellEngine.getSpellById consistently
+const spellEngine = {
+  ...spellEngineLib,
+  getSpellById: getSpell,
+};
 
 const BASE_HP = {
   Warrior: 120, Paladin: 110, Ranger: 90,  Rogue: 80,
@@ -400,11 +407,18 @@ const submitTurn = async (req, res) => {
     const enemyUnit = battle.units.find(u => String(u.user) !== String(req.userId));
     if (!enemyUnit) return res.status(500).json({ success: false, error: 'Battle state corrupted' });
 
-    // Simulate all actions sequentially, tracking in-progress position/AP
-    let simPos = { q: myUnit.position.q, r: myUnit.position.r };
-    let simAP  = myUnit.ap;
-    let totalDamage = 0;
-    const processed = [];
+    // Simulation state
+    let simPos    = { q: myUnit.position.q, r: myUnit.position.r };
+    let simAP     = myUnit.ap;
+    let simMana   = myUnit.mana;
+    let simEnergy = myUnit.energy;
+
+    let totalDamage       = 0;
+    let selfHeal          = 0;
+    let pendingApModSelf  = 0;
+    let pendingApModEnemy = 0;
+    const pendingZones    = [];
+    const processed       = [];
 
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i];
@@ -427,18 +441,27 @@ const submitTurn = async (req, res) => {
         if (dist > simAP) {
           return res.status(400).json({ success: false, error: `Action ${i}: not enough AP (need ${dist}, have ${simAP})` });
         }
+        if (simEnergy < dist) {
+          return res.status(400).json({ success: false, error: `Action ${i}: not enough energy to move (need ${dist}, have ${simEnergy})` });
+        }
         processed.push({
           type: 'move',
           from: { q: simPos.q, r: simPos.r },
           to:   { q: to.q,     r: to.r },
           message: `${myUnit.name} moved to (${to.q}, ${to.r}).`,
         });
-        simPos = { q: to.q, r: to.r };
-        simAP -= dist;
+        simPos    = { q: to.q, r: to.r };
+        simAP    -= dist;
+        simEnergy -= dist;
 
       } else if (action.type === 'attack') {
-        if (simAP < 2) {
+        const ATTACK_AP     = 2;
+        const ATTACK_ENERGY = 2;
+        if (simAP < ATTACK_AP) {
           return res.status(400).json({ success: false, error: `Action ${i}: not enough AP for attack` });
+        }
+        if (simEnergy < ATTACK_ENERGY) {
+          return res.status(400).json({ success: false, error: `Action ${i}: not enough energy to attack (need ${ATTACK_ENERGY}, have ${simEnergy})` });
         }
         const dist = hexDistance(simPos, enemyUnit.position);
         if (dist > 1) {
@@ -448,30 +471,169 @@ const submitTurn = async (req, res) => {
         totalDamage += damage;
         processed.push({
           type:    'attack',
-          from:    { q: simPos.q,              r: simPos.r },
-          to:      { q: enemyUnit.position.q,  r: enemyUnit.position.r },
+          from:    { q: simPos.q,             r: simPos.r },
+          to:      { q: enemyUnit.position.q, r: enemyUnit.position.r },
           damage,
           message: `${myUnit.name} attacked ${enemyUnit.name} for ${damage} damage.`,
         });
-        simAP -= 2;
+        simAP     -= ATTACK_AP;
+        simEnergy -= ATTACK_ENERGY;
+
+      } else if (action.type === 'cast') {
+        const spell = spellEngine.getSpellById(action.spellId);
+        const target = action.target || null;
+        const casterSim = {
+          pos:         simPos,
+          ap:          simAP,
+          mana:        simMana,
+          energy:      simEnergy,
+          knownSpells: myUnit.knownSpells,
+        };
+        const validation = spellEngine.validateCast(spell, casterSim, enemyUnit, target, battle.gridWidth, battle.gridHeight);
+        if (!validation.ok) {
+          return res.status(400).json({ success: false, error: `Action ${i}: ${validation.error}` });
+        }
+
+        // Handle isReaction — dispel a matching active zone
+        if (action.isReaction) {
+          if (!target) {
+            return res.status(400).json({ success: false, error: `Action ${i}: reaction requires a target hex` });
+          }
+          const zoneIdx = battle.activeZones.findIndex(z =>
+            z.hexes.some(h => h.q === target.q && h.r === target.r)
+          );
+          if (zoneIdx === -1) {
+            return res.status(400).json({ success: false, error: `Action ${i}: no active zone at target hex` });
+          }
+          battle.activeZones.splice(zoneIdx, 1);
+          processed.push({
+            type:       'cast',
+            spellId:    action.spellId,
+            spellKind:  'reaction',
+            target,
+            isReaction: true,
+            message:    `${myUnit.name} dispelled the ${spell.name} zone.`,
+          });
+          simAP   -= spell.apCost;
+          simMana -= spell.manaCost;
+          continue;
+        }
+
+        switch (spell.kind) {
+          case 'damage':
+            totalDamage += spell.damage;
+            processed.push({
+              type:      'cast',
+              spellId:   spell.id,
+              spellKind: 'damage',
+              target:    { q: enemyUnit.position.q, r: enemyUnit.position.r },
+              damage:    spell.damage,
+              message:   `${myUnit.name} cast ${spell.name} on ${enemyUnit.name} for ${spell.damage} damage.`,
+            });
+            break;
+
+          case 'zone':
+            pendingZones.push(spellEngine.buildZone(spell, myUnit.character._id, target, battle.gridWidth, battle.gridHeight));
+            processed.push({
+              type:      'cast',
+              spellId:   spell.id,
+              spellKind: 'zone',
+              target,
+              hexes:     spellEngine.hexesInRadius(target, spell.radius, battle.gridWidth, battle.gridHeight),
+              message:   `${myUnit.name} cast ${spell.name} at (${target.q}, ${target.r}).`,
+            });
+            break;
+
+          case 'heal':
+            selfHeal += spell.heal;
+            processed.push({
+              type:      'cast',
+              spellId:   spell.id,
+              spellKind: 'heal',
+              heal:      spell.heal,
+              message:   `${myUnit.name} cast ${spell.name} and restored ${spell.heal} HP.`,
+            });
+            break;
+
+          case 'buff':
+            pendingApModSelf += spell.apMod;
+            processed.push({
+              type:      'cast',
+              spellId:   spell.id,
+              spellKind: 'buff',
+              message:   `${myUnit.name} cast ${spell.name} — gains ${spell.apMod} AP next turn.`,
+            });
+            break;
+
+          case 'debuff':
+            pendingApModEnemy += spell.apMod;
+            processed.push({
+              type:      'cast',
+              spellId:   spell.id,
+              spellKind: 'debuff',
+              target:    { q: enemyUnit.position.q, r: enemyUnit.position.r },
+              message:   `${myUnit.name} cast ${spell.name} on ${enemyUnit.name} — loses ${Math.abs(spell.apMod)} AP next turn.`,
+            });
+            break;
+
+          default:
+            return res.status(400).json({ success: false, error: `Action ${i}: unhandled spell kind '${spell.kind}'` });
+        }
+
+        simAP   -= spell.apCost;
+        simMana -= spell.manaCost;
 
       } else {
         return res.status(400).json({ success: false, error: `Action ${i}: unknown type '${action.type}'` });
       }
     }
 
-    // Apply all state changes at once (damage resolves at end of turn)
+    // ── Commit phase ────────────────────────────────────────────────────────
     myUnit.position = simPos;
     myUnit.ap       = simAP;
-    enemyUnit.hp    = Math.max(0, enemyUnit.hp - totalDamage);
+    myUnit.mana     = simMana;
+    myUnit.energy   = simEnergy;
 
-    // Store replay data for opponent to watch
+    myUnit.hp    = Math.min(myUnit.maxHp, myUnit.hp + selfHeal);
+    enemyUnit.hp = Math.max(0, enemyUnit.hp - totalDamage);
+
+    myUnit.pendingApMod    += pendingApModSelf;
+    enemyUnit.pendingApMod += pendingApModEnemy;
+
+    battle.activeZones = [...battle.activeZones, ...pendingZones];
+
+    // Zone tick — applies damage from ALL active zones (including newly placed ones)
+    const { survivingZones, ticks } = spellEngine.tickZones(battle.activeZones, battle.units);
+    battle.activeZones = survivingZones;
+
+    for (const tick of ticks) {
+      const hitDesc = tick.hitUnits.map(u => `${u.name} (${u.damage} dmg)`).join(', ');
+      const msg     = hitDesc
+        ? `${tick.icon} ${tick.name} ticked — hit: ${hitDesc}.`
+        : `${tick.icon} ${tick.name} ticked (no hits).`;
+      processed.push({
+        type:      'zone_tick',
+        spellId:   tick.spellId,
+        spellKind: 'zone',
+        hexes:     tick.hexes,
+        message:   msg,
+      });
+      battle.log.push({
+        turn:      battle.turnNumber,
+        actor:     myUnit.character._id,
+        action:    'zone_tick',
+        message:   msg,
+        timestamp: new Date(),
+      });
+    }
+
+    // Replay data
     battle.lastTurnActions = processed;
     battle.lastTurnActor   = myUnit.character._id;
 
-    // Add summary log entry
-    const summary = processed.length
-      ? processed.map(a => a.message).join(' ')
+    // Summary log entry
+    const summary = processed.filter(a => a.type !== 'zone_tick').length
+      ? processed.filter(a => a.type !== 'zone_tick').map(a => a.message).join(' ')
       : `${myUnit.name} passed their turn.`;
     battle.log.push({
       turn:      battle.turnNumber,
@@ -481,6 +643,7 @@ const submitTurn = async (req, res) => {
       timestamp: new Date(),
     });
 
+    // Check win (direct damage + zone ticks can be lethal)
     if (enemyUnit.hp <= 0) {
       battle.status = 'completed';
       battle.winner = myUnit.character._id;
@@ -492,8 +655,11 @@ const submitTurn = async (req, res) => {
         timestamp: new Date(),
       });
     } else {
-      battle.currentTurn  = enemyUnit.character._id;
-      enemyUnit.ap        = 6;
+      // AP regen with pending buff/debuff delta, clamped to ≥ 0
+      const nextAP       = Math.max(0, 6 + enemyUnit.pendingApMod);
+      battle.currentTurn = enemyUnit.character._id;
+      enemyUnit.ap       = nextAP;
+      enemyUnit.pendingApMod = 0;
       battle.turnNumber  += 1;
       battle.turnDeadline = new Date(Date.now() + battle.turnDeadlineHours * 3600 * 1000);
     }
