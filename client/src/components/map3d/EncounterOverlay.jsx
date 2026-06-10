@@ -11,9 +11,10 @@ const OUTCOME_ICONS = {
   ambushed:  '🛡',
 };
 
-export default function EncounterOverlay({ encounter, onRespond }) {
-  const { opponent, waiting, result } = encounter;
+export default function EncounterOverlay({ encounter, onRespond, onGoToBattle }) {
+  const { opponent, waiting, result, battleId } = encounter;
   const classIcon = CLASS_ICONS[opponent?.class?.toLowerCase()] ?? '⚔';
+  const isClash   = result?.outcome?.type === 'clash';
 
   return (
     <div className="enc-overlay">
@@ -22,6 +23,17 @@ export default function EncounterOverlay({ encounter, onRespond }) {
           <div className="enc-result">
             <div className="enc-result-icon">{OUTCOME_ICONS[result.outcome.type] ?? '⚔'}</div>
             <p className="enc-result-msg">{result.outcome.message}</p>
+
+            {isClash && battleId && (
+              <button className="enc-btn enc-btn-battle" onClick={onGoToBattle}>
+                <span className="enc-btn-icon">⚔</span>
+                <span>Idi u borbu</span>
+              </button>
+            )}
+
+            {isClash && !battleId && (
+              <p className="enc-result-sub">Nije moguće otvoriti borbu u ovom trenutku.</p>
+            )}
           </div>
         ) : (
           <>

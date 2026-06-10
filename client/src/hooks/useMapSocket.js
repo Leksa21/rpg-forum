@@ -19,7 +19,7 @@ function computeCurrentMapPos(mapX, mapY, travelInfo) {
   ];
 }
 
-const CLEAR_ENCOUNTER = { active: false, opponent: null, waiting: false, result: null };
+const CLEAR_ENCOUNTER = { active: false, opponent: null, waiting: false, result: null, battleId: null };
 
 export function useMapSocket(token, mapX, mapY, travelInfo, myCharId) {
   const [otherPlayers, setOtherPlayers] = useState([]);
@@ -44,6 +44,12 @@ export function useMapSocket(token, mapX, mapY, travelInfo, myCharId) {
     } else {
       setEncounter(prev => ({ ...prev, waiting: true }));
     }
+  }, []);
+
+  const clearEncounter = useCallback(() => {
+    encounterActiveRef.current  = false;
+    frozenOpponentIdRef.current = null;
+    setEncounter(CLEAR_ENCOUNTER);
   }, []);
 
   useEffect(() => {
@@ -86,13 +92,15 @@ export function useMapSocket(token, mapX, mapY, travelInfo, myCharId) {
       setEncounter({ active: true, opponent, waiting: false, result: null });
     });
 
-    socket.on('map:encounter:result', ({ outcome, myAction, theirAction }) => {
-      setEncounter(prev => ({ ...prev, waiting: false, result: { outcome, myAction, theirAction } }));
-      setTimeout(() => {
-        encounterActiveRef.current  = false;
-        frozenOpponentIdRef.current = null;
-        setEncounter(CLEAR_ENCOUNTER);
-      }, 4000);
+    socket.on('map:encounter:result', ({ outcome, myAction, theirAction, battleId }) => {
+      setEncounter(prev => ({ ...prev, waiting: false, result: { outcome, myAction, theirAction }, battleId: battleId || null }));
+      if (!battleId) {
+        setTimeout(() => {
+          encounterActiveRef.current  = false;
+          frozenOpponentIdRef.current = null;
+          setEncounter(CLEAR_ENCOUNTER);
+        }, 4000);
+      }
     });
 
     const interval = setInterval(emitPosition, EMIT_INTERVAL);
@@ -104,5 +112,5 @@ export function useMapSocket(token, mapX, mapY, travelInfo, myCharId) {
     };
   }, [token, myCharId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { otherPlayers, encounter, respondToEncounter };
+  return { otherPlayers, encounter, respondToEncounter, clearEncounter };
 }

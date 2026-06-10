@@ -3699,6 +3699,29 @@ a.db-hero-name:hover {
 }
 .enc-btn-attack:hover { background: rgba(200,60,60,0.18); box-shadow: 0 4px 20px rgba(200,60,60,0.3); }
 
+.enc-btn-battle {
+  border-color: rgba(212,168,67,0.6);
+  color: #f0c058;
+  margin-top: 0.75rem;
+  width: 100%;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.2rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.enc-btn-battle:hover {
+  background: rgba(212,168,67,0.18);
+  box-shadow: 0 4px 24px rgba(212,168,67,0.35);
+}
+
+.enc-result-sub {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.35);
+  margin-top: 0.5rem;
+}
+
 /* Waiting state */
 .enc-waiting {
   display: flex;

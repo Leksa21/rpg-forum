@@ -195,7 +195,13 @@ export default function WorldMap() {
     };
   }, [travel, locations]);
 
-  const { otherPlayers, encounter, respondToEncounter } = useMapSocket(token, playerMapX, playerMapY, travelInfo, myCharId);
+  const { otherPlayers, encounter, respondToEncounter, clearEncounter } = useMapSocket(token, playerMapX, playerMapY, travelInfo, myCharId);
+
+  const handleGoToBattle = () => {
+    if (!encounter.battleId) return;
+    clearEncounter();
+    navigate(`/combat/${encounter.battleId}`);
+  };
 
   const initialCameraPos = useMemo(() => {
     if (!locations.length) return [0, 120, 160];
@@ -313,7 +319,11 @@ export default function WorldMap() {
 
             {/* Encounter overlay */}
             {encounter.active && (
-              <EncounterOverlay encounter={encounter} onRespond={respondToEncounter} />
+              <EncounterOverlay
+                encounter={encounter}
+                onRespond={respondToEncounter}
+                onGoToBattle={handleGoToBattle}
+              />
             )}
 
             {/* Controls hint */}

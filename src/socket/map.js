@@ -1,5 +1,6 @@
 const jwt       = require('jsonwebtoken');
 const Character = require('../models/Character');
+const { createEncounterBattle } = require('../services/battleService');
 
 // socketId → { socketId, charId, name, class, mapX, mapY }
 const connectedPlayers = new Map();
@@ -29,7 +30,7 @@ function resolveOutcome(myAction, theirAction) {
   return { type: 'unknown', message: 'Susret je završen.' };
 }
 
-function resolveEncounter(mapNs, key) {
+async function resolveEncounter(mapNs, key) {
   const enc = activeEncounters.get(key);
   if (!enc) return;
 
@@ -39,15 +40,26 @@ function resolveEncounter(mapNs, key) {
   const a1 = enc.action1 || 'greet';
   const a2 = enc.action2 || 'greet';
 
+  const outcome1 = resolveOutcome(a1, a2);
+  const outcome2 = resolveOutcome(a2, a1);
+
   const sock1 = getSocketIdByCharId(enc.charId1) || enc.socketId1;
   const sock2 = getSocketIdByCharId(enc.charId2) || enc.socketId2;
 
-  if (sock1) mapNs.to(sock1).emit('map:encounter:result', {
-    outcome: resolveOutcome(a1, a2), myAction: a1, theirAction: a2,
-  });
-  if (sock2) mapNs.to(sock2).emit('map:encounter:result', {
-    outcome: resolveOutcome(a2, a1), myAction: a2, theirAction: a1,
-  });
+  if (outcome1.type === 'clash') {
+    try {
+      const battle = await createEncounterBattle(enc.charId1, enc.charId2);
+      const battleId = battle._id.toString();
+      if (sock1) mapNs.to(sock1).emit('map:encounter:result', { outcome: outcome1, myAction: a1, theirAction: a2, battleId });
+      if (sock2) mapNs.to(sock2).emit('map:encounter:result', { outcome: outcome2, myAction: a2, theirAction: a1, battleId });
+      return;
+    } catch (err) {
+      console.error('[encounter] Failed to create battle:', err.message);
+    }
+  }
+
+  if (sock1) mapNs.to(sock1).emit('map:encounter:result', { outcome: outcome1, myAction: a1, theirAction: a2 });
+  if (sock2) mapNs.to(sock2).emit('map:encounter:result', { outcome: outcome2, myAction: a2, theirAction: a1 });
 }
 
 const setupMap = (io) => {

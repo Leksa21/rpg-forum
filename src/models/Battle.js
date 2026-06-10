@@ -84,7 +84,7 @@ const battleSchema = new mongoose.Schema(
     },
     triggerType: {
       type: String,
-      enum: ['challenge', 'travel'],
+      enum: ['challenge', 'travel', 'encounter'],
       default: 'challenge',
     },
     gridWidth:         { type: Number, default: 30 },
