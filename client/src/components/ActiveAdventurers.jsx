@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { get } from '../lib/api';
+import { get, post } from '../lib/api';
 
 const ONLINE_MS  = 5  * 60 * 1000;   // green  — active within 5 min
 const RECENT_MS  = 60 * 60 * 1000;   // yellow — active within 1 hour
@@ -25,10 +25,12 @@ function timeAgo(iso) {
 }
 
 export default function ActiveAdventurers() {
-  const { token } = useAuth();
-  const [chars, setChars]   = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // 'all' | 'online'
+  const { token, character } = useAuth();
+  const navigate = useNavigate();
+  const [chars,       setChars]       = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [filter,      setFilter]      = useState('all');
+  const [challenging, setChallenging] = useState(null);
 
   const fetchActive = useCallback(() => {
     get('/api/characters/active', token)
@@ -42,6 +44,19 @@ export default function ActiveAdventurers() {
     const id = setInterval(fetchActive, POLL_MS);
     return () => clearInterval(id);
   }, [fetchActive]);
+
+  async function handleChallenge(targetCharId) {
+    if (challenging) return;
+    setChallenging(targetCharId);
+    try {
+      const res = await post('/api/battles/challenge', { targetCharacterId: targetCharId }, token);
+      navigate(`/combat/${res.data._id}`);
+    } catch (err) {
+      alert(err.message || 'Could not send challenge');
+    } finally {
+      setChallenging(null);
+    }
+  }
 
   const onlineCount = chars.filter(c => statusOf(c.lastActiveAt) === 'online').length;
   const displayed   = filter === 'online'
@@ -86,22 +101,40 @@ export default function ActiveAdventurers() {
           </div>
         )}
         {!loading && displayed.map(char => {
-          const status = statusOf(char.lastActiveAt);
+          const status  = statusOf(char.lastActiveAt);
+          const isSelf  = character && String(char._id) === String(character._id);
           return (
-            <Link key={char._id} to={`/character/${char._id}`} className="aa-row">
-              <div className="aa-avatar">{char.avatar || '⚔️'}</div>
-              <div className="aa-info">
-                <div className="aa-name-row">
-                  <span className="aa-name">{char.name}</span>
-                  <span className={`aa-status-dot aa-status-${status}`} title={status} />
+            <div key={char._id} className="aa-row" style={{ flexDirection: 'column', gap: '0.4rem', padding: '0.6rem 0.8rem' }}>
+              <Link to={`/character/${char._id}`} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', textDecoration: 'none', color: 'inherit', flex: 1 }}>
+                <div className="aa-avatar">{char.avatar || '⚔️'}</div>
+                <div className="aa-info">
+                  <div className="aa-name-row">
+                    <span className="aa-name">{char.name}</span>
+                    <span className={`aa-status-dot aa-status-${status}`} title={status} />
+                  </div>
+                  <div className="aa-meta">
+                    {[char.race, char.class].filter(Boolean).join(' ')}
+                    {char.level ? ` · Lv.${char.level}` : ''}
+                  </div>
                 </div>
-                <div className="aa-meta">
-                  {[char.race, char.class].filter(Boolean).join(' ')}
-                  {char.level ? ` · Lv.${char.level}` : ''}
-                </div>
-              </div>
-              <div className="aa-time">{timeAgo(char.lastActiveAt)}</div>
-            </Link>
+                <div className="aa-time">{timeAgo(char.lastActiveAt)}</div>
+              </Link>
+              {!isSelf && (
+                <button
+                  onClick={() => handleChallenge(char._id)}
+                  disabled={!!challenging}
+                  style={{
+                    fontSize: '0.72rem', padding: '0.25rem 0.6rem',
+                    background: 'rgba(212,168,67,0.1)', border: '1px solid rgba(212,168,67,0.3)',
+                    color: 'var(--gold)', borderRadius: '6px', cursor: 'pointer',
+                    opacity: challenging === char._id ? 0.5 : 1,
+                    alignSelf: 'flex-end',
+                  }}
+                >
+                  {challenging === char._id ? 'Sending…' : '⚔ Challenge'}
+                </button>
+              )}
+            </div>
           );
         })}
       </div>

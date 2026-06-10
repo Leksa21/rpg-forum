@@ -1,0 +1,390 @@
+/* ─── Combat Page ─── */
+.cmb-page {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.cmb-topbar-spacer { height: 60px; }
+
+/* ─── Header ─── */
+.cmb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1.5rem;
+  background: rgba(17,14,40,0.9);
+  border-bottom: 1px solid var(--border-gold);
+  backdrop-filter: blur(8px);
+  flex-shrink: 0;
+}
+
+.cmb-header-title {
+  font-family: 'Cinzel', serif;
+  font-size: 1.1rem;
+  color: var(--gold);
+  letter-spacing: 0.08em;
+}
+
+.cmb-header-status {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.cmb-header-status.is-my-turn {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.cmb-header-turn-deadline {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* ─── Layout: three columns ─── */
+.cmb-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr 240px;
+  flex: 1;
+  min-height: 0;
+  gap: 0;
+}
+
+/* ─── Left sidebar ─── */
+.cmb-sidebar {
+  background: rgba(11,9,29,0.85);
+  border-right: 1px solid var(--border);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow-y: auto;
+}
+
+.cmb-sidebar-right {
+  border-right: none;
+  border-left: 1px solid var(--border);
+}
+
+/* ─── HP Bars ─── */
+.cmb-hp-section { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.cmb-hp-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+}
+
+.cmb-hp-card.is-me { border-color: rgba(212,168,67,0.3); }
+.cmb-hp-card.is-enemy { border-color: rgba(224,80,80,0.3); }
+
+.cmb-hp-name {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+}
+
+.cmb-hp-avatar { font-size: 1.1rem; line-height: 1; }
+
+.cmb-hp-bar-wrap {
+  height: 8px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.25rem;
+}
+
+.cmb-hp-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.cmb-hp-text {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+/* ─── AP Bar ─── */
+.cmb-ap-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+}
+
+.cmb-ap-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.4rem;
+}
+
+.cmb-ap-pips {
+  display: flex;
+  gap: 4px;
+}
+
+.cmb-ap-pip {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  transition: background 0.2s;
+}
+
+.cmb-ap-pip.filled {
+  background: var(--violet);
+  border-color: var(--violet);
+  box-shadow: 0 0 6px rgba(139,92,246,0.5);
+}
+
+/* ─── Action buttons ─── */
+.cmb-actions { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.cmb-action-btn {
+  width: 100%;
+  padding: 0.55rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.18s;
+  text-align: center;
+}
+
+.cmb-action-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.cmb-action-btn.primary {
+  background: var(--gold-dim);
+  border-color: var(--gold);
+  color: var(--gold-light);
+}
+.cmb-action-btn.primary:not(:disabled):hover {
+  background: rgba(212,168,67,0.25);
+  box-shadow: 0 0 10px var(--gold-glow);
+}
+
+.cmb-action-btn.attack {
+  background: rgba(224,80,80,0.15);
+  border-color: rgba(224,80,80,0.5);
+  color: #e05050;
+}
+.cmb-action-btn.attack.active-mode,
+.cmb-action-btn.attack:not(:disabled):hover {
+  background: rgba(224,80,80,0.25);
+  box-shadow: 0 0 8px rgba(224,80,80,0.3);
+}
+
+.cmb-action-btn.move {
+  background: rgba(92,107,192,0.15);
+  border-color: rgba(92,107,192,0.5);
+  color: #7986cb;
+}
+.cmb-action-btn.move.active-mode,
+.cmb-action-btn.move:not(:disabled):hover {
+  background: rgba(92,107,192,0.25);
+}
+
+.cmb-action-btn.danger {
+  background: transparent;
+  border-color: rgba(224,80,80,0.3);
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.cmb-action-btn.danger:not(:disabled):hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.cmb-action-separator {
+  height: 1px;
+  background: var(--border);
+  margin: 0.25rem 0;
+}
+
+/* ─── Grid container ─── */
+.cmb-grid-wrap {
+  overflow: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  background: var(--bg-deep);
+  cursor: default;
+}
+
+.cmb-grid-wrap::-webkit-scrollbar { width: 6px; height: 6px; }
+.cmb-grid-wrap::-webkit-scrollbar-track { background: transparent; }
+.cmb-grid-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ─── SVG Hex styles ─── */
+.cmb-hex { transition: fill 0.12s; cursor: default; }
+.cmb-hex.clickable { cursor: pointer; }
+.cmb-hex.clickable:hover { filter: brightness(1.4); }
+
+/* ─── Combat Log ─── */
+.cmb-log-wrap {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.cmb-log-title {
+  padding: 0.7rem 1rem 0.5rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.8rem;
+  color: var(--gold);
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.cmb-log-entries {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cmb-log-entries::-webkit-scrollbar { width: 4px; }
+.cmb-log-entries::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.cmb-log-entry {
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--text-soft);
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.03);
+}
+
+.cmb-log-entry.action-move  { border-left: 2px solid rgba(92,107,192,0.5); }
+.cmb-log-entry.action-attack { border-left: 2px solid rgba(224,80,80,0.6); color: var(--text); }
+.cmb-log-entry.action-battle_start { border-left: 2px solid var(--gold-dim); color: var(--gold); }
+.cmb-log-entry.action-surrender { border-left: 2px solid rgba(224,80,80,0.4); }
+.cmb-log-entry.action-end_turn { border-left: 2px solid rgba(80,55,160,0.4); }
+.cmb-log-entry.action-timeout_forfeit { border-left: 2px solid rgba(224,80,80,0.6); color: var(--red); }
+
+.cmb-log-turn {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-right: 0.35rem;
+}
+
+/* ─── Pending Challenge Screen ─── */
+.cmb-pending {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 1.5rem;
+  padding: 3rem;
+  text-align: center;
+}
+
+.cmb-pending-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-gold);
+  border-radius: 18px;
+  padding: 2rem 2.5rem;
+  max-width: 420px;
+  width: 100%;
+}
+
+.cmb-pending-title {
+  font-family: 'Cinzel', serif;
+  font-size: 1.3rem;
+  color: var(--gold);
+  margin-bottom: 0.5rem;
+}
+
+.cmb-pending-vs {
+  font-size: 0.9rem;
+  color: var(--text-soft);
+  margin-bottom: 1.5rem;
+}
+
+.cmb-pending-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+/* ─── Completed Screen ─── */
+.cmb-completed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 1rem;
+  text-align: center;
+  padding: 3rem;
+}
+
+.cmb-completed-title {
+  font-family: 'Cinzel', serif;
+  font-size: 2rem;
+  color: var(--gold);
+}
+
+.cmb-completed-subtitle {
+  color: var(--text-soft);
+  font-size: 1rem;
+}
+
+/* ─── Waiting screen ─── */
+.cmb-waiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 1rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 2rem;
+}
+
+.cmb-waiting-pulse {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--gold);
+  animation: cmbPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes cmbPulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.9); }
+  50%       { opacity: 1;   transform: scale(1.1); }
+}
+
+/* ─── Turn banner ─── */
+.cmb-turn-banner {
+  text-align: center;
+  padding: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(66,200,122,0.1);
+  color: var(--green);
+  border-bottom: 1px solid rgba(66,200,122,0.2);
+  letter-spacing: 0.05em;
+}
