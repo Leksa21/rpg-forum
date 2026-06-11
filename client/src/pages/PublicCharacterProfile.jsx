@@ -4,6 +4,7 @@ import { get } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import BgScene from '../components/layout/BgScene';
 import Topbar from '../components/layout/Topbar';
+import { isInjured, countActiveWounds } from '../lib/progression';
 
 function calcDaysActive(createdAt) {
   if (!createdAt) return 0;
@@ -99,8 +100,15 @@ export default function PublicCharacterProfile() {
               <div className="pub-badges">
                 {char.isDead
                   ? <span className="pub-badge pub-badge-dead">☠ Fallen</span>
-                  : <span className="pub-badge pub-badge-alive">◈ Adventuring</span>
+                  : isInjured(char)
+                    ? <span className="pub-badge pub-badge-injured">⛑ Recovering</span>
+                    : <span className="pub-badge pub-badge-alive">◈ Adventuring</span>
                 }
+                {!char.isDead && countActiveWounds(char.wounds) > 0 && (
+                  <span className="pub-badge pub-badge-wounded" title="Wounds heal 24h after they were inflicted">
+                    🩸 {countActiveWounds(char.wounds)} {countActiveWounds(char.wounds) === 1 ? 'wound' : 'wounds'}
+                  </span>
+                )}
               </div>
             </div>
 

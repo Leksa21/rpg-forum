@@ -75,6 +75,31 @@ const logEntrySchema = new mongoose.Schema(
   { _id: false }
 );
 
+const deathRollSchema = new mongoose.Schema(
+  {
+    roll:     { type: Number, required: true },
+    modifier: { type: Number, required: true },
+    dc:       { type: Number, required: true },
+    total:    { type: Number, required: true },
+    survived: { type: Boolean, required: true },
+  },
+  { _id: false }
+);
+
+const rewardsSchema = new mongoose.Schema(
+  {
+    settled:            { type: Boolean, default: false },
+    winnerXp:           { type: Number, default: 0 },
+    loserXp:            { type: Number, default: 0 },
+    winnerLevelsGained: { type: Number, default: 0 },
+    winnerNewLevel:     { type: Number, default: null },
+    loserActiveWounds:  { type: Number, default: 0 },
+    loserDied:          { type: Boolean, default: false },
+    deathRoll:          { type: deathRollSchema, default: null },
+  },
+  { _id: false }
+);
+
 const battleSchema = new mongoose.Schema(
   {
     status: {
@@ -100,6 +125,7 @@ const battleSchema = new mongoose.Schema(
     lastTurnActions:   { type: [turnActionSchema], default: [] },
     lastTurnActor:     { type: mongoose.Schema.Types.ObjectId, ref: 'Character', default: null },
     activeZones:       { type: [zoneSchema], default: [] },
+    rewards:           { type: rewardsSchema, default: null },
   },
   { timestamps: true, optimisticConcurrency: true }
 );

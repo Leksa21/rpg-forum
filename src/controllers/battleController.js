@@ -4,6 +4,7 @@ const { Types }                     = require('mongoose');
 const { BASE_MANA, BASE_ENERGY }    = require('../data/classResources');
 const { CLASS_SPELLS, getSpell }    = require('../data/spells');
 const spellEngineLib                = require('../services/spellEngine');
+const { settleBattle, isInjured }   = require('../services/progression');
 
 // Thin wrapper so submitTurn can call spellEngine.getSpellById consistently
 const spellEngine = {
@@ -80,6 +81,7 @@ async function handleTimeout(battle) {
     message: `${current.name} ran out of time — forfeited!`,
     timestamp: new Date(),
   });
+  await settleBattle(battle);
   await battle.save();
   return true;
 }
@@ -95,9 +97,16 @@ const challengePlayer = async (req, res) => {
     const challenger = await Character.findOne({ owner: req.userId, isSetup: true, isDead: false });
     if (!challenger) return res.status(400).json({ success: false, error: 'No active character' });
 
+    if (isInjured(challenger)) {
+      return res.status(400).json({ success: false, error: 'You are too injured to fight — rest and recover first' });
+    }
+
     const target = await Character.findById(targetCharacterId);
     if (!target) return res.status(404).json({ success: false, error: 'Target character not found' });
     if (target.isDead) return res.status(400).json({ success: false, error: 'Target character is dead' });
+    if (isInjured(target)) {
+      return res.status(400).json({ success: false, error: 'Target character is injured and recovering' });
+    }
     if (String(target.owner) === String(req.userId)) {
       return res.status(400).json({ success: false, error: 'Cannot challenge yourself' });
     }
@@ -336,6 +345,7 @@ const basicAttack = async (req, res) => {
         message: `${enemyUnit.name} has been defeated! ${myUnit.name} wins!`,
         timestamp: new Date(),
       });
+      await settleBattle(battle);
     }
 
     await battle.save();
@@ -654,6 +664,7 @@ const submitTurn = async (req, res) => {
         message:   `${enemyUnit.name} has been defeated! ${myUnit.name} wins!`,
         timestamp: new Date(),
       });
+      await settleBattle(battle);
     } else {
       // AP regen with pending buff/debuff delta, clamped to ≥ 0
       const nextAP       = Math.max(0, 6 + enemyUnit.pendingApMod);
@@ -695,6 +706,7 @@ const surrender = async (req, res) => {
       timestamp: new Date(),
     });
 
+    await settleBattle(battle);
     await battle.save();
     const populated = await populatedBattle(battle._id);
     res.json({ success: true, data: populated });

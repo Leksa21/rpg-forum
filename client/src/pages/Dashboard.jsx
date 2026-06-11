@@ -5,6 +5,7 @@ import Topbar from '../components/layout/Topbar';
 import GlobalChat from '../components/GlobalChat';
 import ActiveAdventurers   from '../components/ActiveAdventurers';
 import PendingChallenges   from '../components/PendingChallenges';
+import { xpForNextLevel, countActiveWounds, isInjured, injuryRemainingLabel } from '../lib/progression';
 
 const STAT_LABELS = {
   strength:     { label: 'STR', icon: '⚔️' },
@@ -26,6 +27,13 @@ export default function Dashboard() {
   const { character } = useAuth();
   const stats = character?.stats || {};
 
+  const level        = character?.level ?? 1;
+  const xp           = character?.experience ?? 0;
+  const xpNeeded     = xpForNextLevel(level);
+  const xpPct        = Math.min(100, Math.round((xp / xpNeeded) * 100));
+  const activeWounds = countActiveWounds(character?.wounds);
+  const injured      = isInjured(character);
+
   return (
     <>
       <BgScene />
@@ -41,9 +49,22 @@ export default function Dashboard() {
               <Link to="/character" className="db-hero-name">{character?.name}</Link>
               <p className="db-hero-meta">{character?.race} {character?.class}</p>
               <div className="db-hero-tags">
-                <span className="char-tag">Level {character?.level ?? 1}</span>
-                <span className="char-tag">{character?.experience ?? 0} XP</span>
+                <span className="char-tag">Level {level}</span>
                 <span className="char-tag" style={{ color: '#f0d060' }}>0 Gold</span>
+                {activeWounds > 0 && (
+                  <span className="char-tag db-wound-tag" title="Wounds heal 24h after they were inflicted">
+                    🩸 {activeWounds} {activeWounds === 1 ? 'wound' : 'wounds'}
+                  </span>
+                )}
+                {injured && (
+                  <span className="char-tag db-injured-tag" title="You cannot fight while recovering">
+                    ⛑ Injured · {injuryRemainingLabel(character)}
+                  </span>
+                )}
+              </div>
+              <div className="db-xp-bar" title={`${xp} / ${xpNeeded} XP to level ${level + 1}`}>
+                <div className="db-xp-fill" style={{ width: `${xpPct}%` }} />
+                <span className="db-xp-text">{xp} / {xpNeeded} XP</span>
               </div>
             </div>
           </div>

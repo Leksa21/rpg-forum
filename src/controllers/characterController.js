@@ -24,7 +24,7 @@ const getActiveCharacters = async (req, res) => {
       isSetup: true,
       lastActiveAt: { $gte: cutoff },
     })
-      .select('name class race level avatar tagline lastActiveAt')
+      .select('name class race level avatar tagline lastActiveAt injuredUntil wounds')
       .sort({ lastActiveAt: -1 })
       .limit(50);
     res.json({ success: true, data: characters });
@@ -116,7 +116,7 @@ const setupCharacter = async (req, res) => {
 const getPublicCharacter = async (req, res) => {
   try {
     const character = await Character.findById(req.params.id)
-      .select('name class race level avatar fullBodyAvatar tagline backstory isDead currentLocation createdAt')
+      .select('name class race level avatar fullBodyAvatar tagline backstory isDead currentLocation createdAt wounds injuredUntil')
       .populate('currentLocation', 'name icon');
 
     if (!character) return res.status(404).json({ success: false, error: 'Character not found' });

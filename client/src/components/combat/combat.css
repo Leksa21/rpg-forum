@@ -552,3 +552,87 @@
   60%  { filter: brightness(1.6); }
   100% { filter: brightness(1); }
 }
+
+/* ─── Battle results (rewards) ─── */
+.cmb-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 1rem auto 0.5rem;
+  max-width: 420px;
+  padding: 1rem 1.25rem;
+  border: 1px solid rgba(212,175,55,0.25);
+  border-radius: 10px;
+  background: rgba(0,0,0,0.35);
+  text-align: center;
+}
+
+.cmb-results-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+.cmb-results-row.xp    { color: var(--gold); font-weight: 600; }
+.cmb-results-row.wound { color: #e08080; }
+
+.cmb-results-icon { font-size: 1.1rem; }
+
+.cmb-results-levelup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.6rem;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(212,175,55,0.2), rgba(139,92,246,0.15));
+  border: 1px solid rgba(212,175,55,0.5);
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 1rem;
+  animation: levelUpGlow 1.4s ease-in-out infinite alternate;
+}
+.cmb-results-levelup-sub {
+  font-weight: 400;
+  font-size: 0.78rem;
+  color: var(--text-soft);
+}
+
+@keyframes levelUpGlow {
+  from { box-shadow: 0 0 6px rgba(212,175,55,0.25); }
+  to   { box-shadow: 0 0 18px rgba(212,175,55,0.55); }
+}
+
+.cmb-results-deathroll {
+  padding: 0.7rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+.cmb-results-deathroll.survived {
+  border: 1px solid rgba(66,200,122,0.45);
+  background: rgba(66,200,122,0.08);
+  color: #6fdc9a;
+}
+.cmb-results-deathroll.died {
+  border: 1px solid rgba(224,80,80,0.55);
+  background: rgba(224,80,80,0.1);
+  color: var(--red);
+}
+.cmb-results-deathroll-title { font-weight: 700; margin-bottom: 0.25rem; }
+.cmb-results-deathroll-math  { font-family: monospace; font-size: 0.85rem; opacity: 0.9; }
+
+.cmb-results-died {
+  padding: 0.7rem;
+  border-radius: 8px;
+  border: 1px solid rgba(224,80,80,0.55);
+  background: rgba(224,80,80,0.12);
+  color: var(--red);
+  font-weight: 600;
+}
+
+.cmb-results-note {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.cmb-results-warning { color: var(--red); display: block; margin-top: 0.25rem; }

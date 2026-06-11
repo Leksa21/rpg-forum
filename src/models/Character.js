@@ -78,6 +78,19 @@ const characterSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    wounds: {
+      type: [
+        new mongoose.Schema(
+          { inflictedAt: { type: Date, required: true } },
+          { _id: false }
+        ),
+      ],
+      default: [],
+    },
+    injuredUntil: {
+      type: Date,
+      default: null,
+    },
     isSetup: {
       type: Boolean,
       default: false,

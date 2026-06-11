@@ -10,6 +10,7 @@ import APBar         from '../components/combat/APBar';
 import ResourceBars  from '../components/combat/ResourceBars';
 import SpellPicker   from '../components/combat/SpellPicker';
 import CombatLog     from '../components/combat/CombatLog';
+import BattleResults from '../components/combat/BattleResults';
 import BgScene       from '../components/layout/BgScene';
 import Topbar        from '../components/layout/Topbar';
 import '../components/combat/combat.css';
@@ -381,6 +382,7 @@ export default function Combat() {
             <div className="cmb-completed-subtitle">
               {iWon ? `You defeated ${enemyUnit?.name}!` : `${battle.winner?.name || enemyUnit?.name} won.`}
             </div>
+            <BattleResults rewards={battle.rewards} iWon={iWon} enemyName={enemyUnit?.name} />
             <CombatLog entries={battle.log} />
             <Link to="/dashboard" className="cmb-action-btn primary"
               style={{ marginTop: '1rem', display: 'inline-block', textDecoration: 'none' }}>

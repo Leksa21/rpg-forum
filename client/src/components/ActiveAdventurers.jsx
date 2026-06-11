@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { get, post } from '../lib/api';
+import { isInjured, injuryRemainingLabel } from '../lib/progression';
 
 const ONLINE_MS  = 5  * 60 * 1000;   // green  — active within 5 min
 const RECENT_MS  = 60 * 60 * 1000;   // yellow — active within 1 hour
@@ -103,6 +104,7 @@ export default function ActiveAdventurers() {
         {!loading && displayed.map(char => {
           const status  = statusOf(char.lastActiveAt);
           const isSelf  = character && String(char._id) === String(character._id);
+          const injured = isInjured(char);
           return (
             <div key={char._id} className="aa-row" style={{ flexDirection: 'column', gap: '0.4rem', padding: '0.6rem 0.8rem' }}>
               <Link to={`/character/${char._id}`} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', textDecoration: 'none', color: 'inherit', flex: 1 }}>
@@ -122,16 +124,19 @@ export default function ActiveAdventurers() {
               {!isSelf && (
                 <button
                   onClick={() => handleChallenge(char._id)}
-                  disabled={!!challenging}
+                  disabled={!!challenging || injured}
+                  title={injured ? `Injured — recovering for ${injuryRemainingLabel(char)}` : undefined}
                   style={{
                     fontSize: '0.72rem', padding: '0.25rem 0.6rem',
-                    background: 'rgba(212,168,67,0.1)', border: '1px solid rgba(212,168,67,0.3)',
-                    color: 'var(--gold)', borderRadius: '6px', cursor: 'pointer',
-                    opacity: challenging === char._id ? 0.5 : 1,
+                    background: injured ? 'rgba(224,80,80,0.08)' : 'rgba(212,168,67,0.1)',
+                    border: injured ? '1px solid rgba(224,80,80,0.3)' : '1px solid rgba(212,168,67,0.3)',
+                    color: injured ? 'var(--red, #e05050)' : 'var(--gold)',
+                    borderRadius: '6px', cursor: injured ? 'not-allowed' : 'pointer',
+                    opacity: challenging === char._id || injured ? 0.55 : 1,
                     alignSelf: 'flex-end',
                   }}
                 >
-                  {challenging === char._id ? 'Sending…' : '⚔ Challenge'}
+                  {injured ? '🩸 Injured' : challenging === char._id ? 'Sending…' : '⚔ Challenge'}
                 </button>
               )}
             </div>
