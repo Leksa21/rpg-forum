@@ -5,8 +5,8 @@ import { getTerrainHeight } from './terrainNoise';
 
 // Animated painterly ocean. Shore foam is driven by a per-vertex mask
 // precomputed from the terrain height — zero per-frame CPU cost.
-const SIZE  = 760;
-const SEGS  = 170;
+const SIZE  = 1180;
+const SEGS  = 200;
 const WATER_Y = -0.55;
 
 const VERT = /* glsl */`
@@ -54,9 +54,9 @@ void main() {
   float wave = w1 * 0.65 + w2 * 0.35;
 
   // Painterly banded water color, deep → shallow
-  vec3 deep    = vec3(0.07, 0.26, 0.52);
-  vec3 mid     = vec3(0.12, 0.38, 0.64);
-  vec3 shallow = vec3(0.26, 0.62, 0.78);
+  vec3 deep    = vec3(0.10, 0.32, 0.62);
+  vec3 mid     = vec3(0.16, 0.46, 0.72);
+  vec3 shallow = vec3(0.36, 0.76, 0.85);
   float band   = floor((1.0 - vDepth) * 3.0 + wave * 0.9) / 3.0;
   vec3 col     = mix(deep, mid, clamp(band, 0.0, 1.0));
   col          = mix(col, shallow, (1.0 - vDepth) * 0.55);
@@ -89,7 +89,7 @@ export default function StylizedWater({ seed = 42 }) {
       // Foam mask peaks where the seabed crosses the waterline
       foam[i]  = Math.max(0, 1 - Math.abs(h - WATER_Y + 0.35) / 1.5);
       // Depth 0 = shallow, 1 = deep open ocean
-      depth[i] = Math.min(1, Math.max(0, -h / 5.5));
+      depth[i] = Math.min(1, Math.max(0, -h / 6.5));
     }
 
     geo.setAttribute('aFoam',  new THREE.BufferAttribute(foam, 1));
@@ -113,8 +113,8 @@ export default function StylizedWater({ seed = 42 }) {
       <mesh geometry={geometry} material={material} position={[0, WATER_Y, 0]} />
       {/* Far horizon ocean beyond the detailed plane */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, WATER_Y - 0.2, 0]}>
-        <planeGeometry args={[2400, 2400]} />
-        <meshBasicMaterial color="#0f3a60" />
+        <planeGeometry args={[4000, 4000]} />
+        <meshBasicMaterial color="#16456e" />
       </mesh>
     </>
   );

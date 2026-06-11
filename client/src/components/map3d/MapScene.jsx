@@ -31,26 +31,24 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
 
   return (
     <>
-      {/* Daytime sky blue background */}
-      <color attach="background" args={['#6bb0d8']} />
-
-      {/* Daytime sky with sun */}
+      {/* Soft anime sky */}
+      <color attach="background" args={['#8fcbe8']} />
       <Sky
         distance={450000}
-        sunPosition={[120, 55, -220]}
-        turbidity={5}
-        rayleigh={0.6}
-        mieCoefficient={0.003}
-        mieDirectionalG={0.82}
+        sunPosition={[120, 65, -220]}
+        turbidity={3.5}
+        rayleigh={0.9}
+        mieCoefficient={0.004}
+        mieDirectionalG={0.8}
       />
 
-      {/* Warm sun + hemisphere (sky/ground) for rich natural lighting */}
-      <ambientLight intensity={0.5} color="#d4e8f4" />
-      <directionalLight position={[60, 80, -60]} intensity={1.5} color="#fff5d0" />
-      <hemisphereLight args={['#87ceeb', '#4a7a2e', 0.35]} />
+      {/* Bright soft lighting — pastel, low contrast */}
+      <ambientLight intensity={0.6} color="#dcecfa" />
+      <directionalLight position={[60, 80, -60]} intensity={1.25} color="#ffeec2" />
+      <hemisphereLight args={['#9ed4f0', '#5a8a3e', 0.4]} />
 
-      {/* Atmospheric haze — starts well beyond terrain centre, fades distant edges */}
-      <fog attach="fog" args={['#9fd0e8', 420, 950]} />
+      {/* Atmospheric haze — soft blue distance fade for the bigger world */}
+      <fog attach="fog" args={['#aed9ee', 650, 1700]} />
 
       {/* Rivers and lakes are carved into the terrain heightfield itself —
           the global water plane fills them with animated water and shore foam */}
@@ -97,8 +95,8 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
         enableRotate={false}
         enableDamping
         dampingFactor={0.08}
-        minDistance={30}
-        maxDistance={900}
+        minDistance={40}
+        maxDistance={1400}
         enablePan
         panSpeed={1.0}
         mouseButtons={{ LEFT: 2, MIDDLE: 1, RIGHT: 2 }}

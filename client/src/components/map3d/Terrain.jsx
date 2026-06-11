@@ -3,8 +3,8 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { fbm, getTerrainHeight } from './terrainNoise';
 
-const SIZE = 520;
-const SEGS = 300; // ~90k verts — fine for a single static mesh, keeps carved rivers smooth
+const SIZE = 880;
+const SEGS = 360; // ~130k verts — single static mesh, keeps carved rivers smooth
 
 // ─── Vertex Shader ────────────────────────────────────────────────────────────
 const VERT = /* glsl */`
@@ -56,72 +56,47 @@ float vn(vec2 p) {
 // 2-octave fbm for fine surface detail
 float fn(vec2 p) { return vn(p) * 0.62 + vn(p * 2.2) * 0.38; }
 
-// ── Painterly biome color — soft banded palette, vibrant and readable ──
+// ── Anime fantasy biome palette — every transition is a smooth gradient ──
 vec3 terrainColor(vec2 xz, float h, float sl, float lo, float md) {
-  float hi = fn(xz * 1.9); // fine detail, per-pixel
+  float hi = fn(xz * 1.2);              // fine hand-painted grain
+  float g  = lo * 0.5 + md * 0.3 + hi * 0.2; // patchiness driver
 
-  // Cliff faces — override height-based color
-  if (sl > 0.50) {
-    float v = vn(xz * 0.38) * 0.22 + 0.78;
-    if (h > 15.0) return vec3(0.78, 0.76, 0.72) * v;
-    return vec3(0.55, 0.45, 0.36) * v;
-  }
+  // Palette — saturated Ghibli-style colors
+  vec3 deepW   = vec3(0.09, 0.30, 0.60);
+  vec3 shalW   = vec3(0.33, 0.75, 0.84);
+  vec3 sandC   = vec3(0.97, 0.88, 0.62);
+  vec3 grassA  = vec3(0.55, 0.85, 0.36);  // sunlit spring green
+  vec3 grassB  = vec3(0.36, 0.72, 0.26);  // meadow
+  vec3 forestC = vec3(0.17, 0.52, 0.22);  // emerald canopy
+  vec3 moorC   = vec3(0.62, 0.66, 0.34);  // golden-olive uplands
+  vec3 rockC   = vec3(0.56, 0.55, 0.70);  // lavender-blue anime rock
+  vec3 rockHi  = vec3(0.74, 0.74, 0.87);
+  vec3 snowC   = vec3(0.97, 0.98, 1.00);
 
-  // Deep ocean
-  if (h < -1.6) return mix(vec3(0.07, 0.25, 0.50), vec3(0.10, 0.31, 0.56), lo);
-  // Ocean
-  if (h < -0.5) return mix(vec3(0.11, 0.36, 0.62), vec3(0.16, 0.44, 0.70), md*0.5+lo*0.5);
-  // Shallow coastal water — bright turquoise
-  if (h <  0.1) {
-    float t = (h + 0.5) / 0.6;
-    return mix(
-      mix(vec3(0.13, 0.42, 0.66), vec3(0.18, 0.50, 0.72), md),
-      mix(vec3(0.30, 0.68, 0.80), vec3(0.42, 0.78, 0.86), hi), t);
-  }
-  // Sandy beach — warm cream
-  if (h < 1.4) {
-    float wet   = 1.0 - smoothstep(0.1, 1.2, h);
-    float grain = fn(xz * 1.6) * 0.12 + 0.88;
-    return mix(vec3(0.93, 0.85, 0.58), vec3(0.78, 0.68, 0.46), wet*0.65) * grain;
-  }
-  // Lowland meadow — lush painterly green patches
-  if (h < 5.5) {
-    float blend  = lo*0.55 + md*0.25 + hi*0.20;
-    // Soft 3-step banding for a hand-painted feel
-    float band   = floor(blend * 3.0 + 0.5) / 3.0;
-    blend        = mix(blend, band, 0.55);
-    float t      = (h - 1.4) / 4.1;
-    vec3  light  = vec3(0.55, 0.82, 0.32);
-    vec3  mid2   = vec3(0.42, 0.72, 0.24);
-    vec3  dark   = vec3(0.30, 0.58, 0.17);
-    vec3  col    = mix(light, mix(mid2, dark, clamp((blend-0.4)/0.6, 0.0, 1.0)), smoothstep(0.15, 0.75, blend));
-    return mix(col, dark, t * 0.30);
-  }
-  // Forest — deep painterly canopy clusters
-  if (h < 13.0) {
-    float cluster = pow(lo, 1.4)*0.60 + md*0.28 + hi*0.12;
-    float band    = floor(cluster * 4.0 + 0.5) / 4.0;
-    cluster       = mix(cluster, band, 0.5);
-    float t       = (h - 5.5) / 7.5;
-    return mix(
-      mix(vec3(0.27, 0.58, 0.20), vec3(0.16, 0.42, 0.12), cluster),
-      vec3(0.11, 0.30, 0.09), t * 0.45);
-  }
-  // Highland — sunlit moor, ochre grass
-  if (h < 19.0) {
-    float t = (h - 13.0) / 6.0;
-    float r = md*0.45 + hi*0.35 + lo*0.20;
-    return mix(vec3(0.42, 0.55, 0.22), vec3(0.62, 0.52, 0.32), t*0.65 + r*0.35);
-  }
-  // Mountain rock — warm strata
-  if (h < 25.0) {
-    float strata = abs(sin(h * 0.65 + lo * 2.8)) * 0.40 + 0.60;
-    float n = md*0.5 + hi*0.5;
-    return mix(vec3(0.55, 0.48, 0.42), vec3(0.76, 0.70, 0.62), strata * n);
-  }
-  // Snow peaks — bright with cool shadow tint
-  float sp = pow(hi, 2.2) * 0.55 + lo * 0.25;
-  return mix(vec3(0.88, 0.91, 0.96), vec3(0.99, 0.99, 1.00), sp);
+  // Continuous vertical gradient — no hard bands anywhere
+  vec3 col = mix(deepW, shalW, smoothstep(-3.5, -0.2, h));
+  col = mix(col, sandC, smoothstep(-0.25, 0.85, h));
+  col = mix(col, mix(grassA, grassB, smoothstep(0.25, 0.75, g)), smoothstep(0.7, 2.6, h));
+
+  // Forest creeps in patchily — cluster noise decides where canopy takes over
+  float forestT = smoothstep(4.2, 8.0, h) * (0.45 + 0.55 * smoothstep(0.3, 0.7, lo));
+  col = mix(col, forestC, min(1.0, forestT));
+  col = mix(col, forestC * 0.78, smoothstep(8.5, 12.0, h) * 0.5); // deep woods shade
+
+  // Uplands → rock → snow, all gradient
+  col = mix(col, moorC, smoothstep(11.0, 15.0, h));
+  col = mix(col, mix(rockC, rockHi, md), smoothstep(14.0, 19.5, h));
+  col = mix(col, snowC, smoothstep(21.0, 24.5, h + lo * 2.4)); // noisy snowline
+
+  // Steep faces fade toward bare rock — smooth, slope- and height-aware
+  float cliff = smoothstep(0.40, 0.62, sl) * smoothstep(0.6, 2.2, h);
+  col = mix(col, mix(rockC * 0.82, rockHi * 0.9, hi), cliff * 0.85);
+
+  // Large painterly wash — warm and cool patches drifting across the world
+  float macro = fn(xz * 0.0045);
+  col *= mix(vec3(0.94, 1.00, 0.90), vec3(1.06, 1.00, 1.07), macro);
+
+  return col;
 }
 
 uniform float uTime;
@@ -130,27 +105,29 @@ void main() {
   vec2 xz   = vWorldPos.xz;
   vec3 base = terrainColor(xz, vHeight, vSlope, vLo, vMid);
 
-  // Lighting — warm golden sun, matches scene directionalLight [60, 80, -60]
+  // Soft anime lighting — bright ambient, warm gentle sun, low contrast
   vec3 sunDir  = normalize(vec3(0.51, 0.69, -0.51));
-  vec3 ambient = vec3(0.50, 0.56, 0.60);
-  vec3 sun     = vec3(1.18, 1.04, 0.80);
+  vec3 ambient = vec3(0.58, 0.62, 0.66);
+  vec3 sun     = vec3(1.02, 0.92, 0.72);
 
   float diff = max(0.0, dot(vNormal, sunDir));
-  // Soft toon-ish light banding for the painterly look
-  diff = smoothstep(0.0, 0.55, diff) * 0.75 + diff * 0.25;
+  diff = smoothstep(0.0, 0.62, diff) * 0.7 + diff * 0.3; // soft toon falloff
 
-  // Hemisphere sky/ground light
+  // Hemisphere sky/ground bounce
   float hemiT   = 0.5 + 0.5 * vNormal.y;
-  vec3  hemiCol = mix(vec3(0.26, 0.36, 0.14), vec3(0.50, 0.72, 0.86), hemiT) * 0.30;
+  vec3  hemiCol = mix(vec3(0.28, 0.38, 0.18), vec3(0.55, 0.74, 0.92), hemiT) * 0.30;
 
-  // Concave-area AO approximation
-  float ao = 0.84 + 0.16 * (vNormal.y * 0.5 + 0.5);
+  float ao = 0.86 + 0.14 * (vNormal.y * 0.5 + 0.5);
 
   // Drifting cloud shadows — large soft noise scrolling over the land
-  float cloud  = fn(xz * 0.011 + vec2(uTime * 0.014, uTime * 0.009));
-  float shadow = mix(1.0, 0.78, smoothstep(0.52, 0.78, cloud));
+  float cloud  = fn(xz * 0.0075 + vec2(uTime * 0.013, uTime * 0.008));
+  float shadow = mix(1.0, 0.80, smoothstep(0.52, 0.78, cloud));
 
   vec3 lit = base * (ambient + sun * diff + hemiCol) * ao * shadow;
+
+  // Gentle filmic-ish roll-off keeps brights pastel instead of blown out
+  lit = lit / (lit + vec3(0.22)) * 1.22;
+
   gl_FragColor = vec4(lit, 1.0);
 }
 `;

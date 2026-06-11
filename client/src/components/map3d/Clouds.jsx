@@ -4,9 +4,9 @@ import * as THREE from 'three';
 
 // Soft low-poly clouds drifting over the map — pairs visually with the
 // moving cloud shadows baked into the terrain shader. One instanced mesh.
-const CLOUD_COUNT = 14;
+const CLOUD_COUNT = 20;
 const PUFFS_PER_CLOUD = 4;
-const AREA = 520;
+const AREA = 880;
 const DRIFT_SPEED = 1.6; // world units per second
 
 function rng(seed) {
@@ -38,7 +38,7 @@ export default function Clouds({ seed = 42 }) {
     for (let c = 0; c < CLOUD_COUNT; c++) {
       const cx = (rand() - 0.5) * AREA;
       const cz = (rand() - 0.5) * AREA;
-      const cy = 62 + rand() * 20;
+      const cy = 78 + rand() * 26;
       const cs = 5 + rand() * 7;
       for (let p = 0; p < PUFFS_PER_CLOUD; p++) {
         const px = cx + (rand() - 0.5) * cs * 2.2;

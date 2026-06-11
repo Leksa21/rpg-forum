@@ -202,13 +202,13 @@ export default function WorldMap() {
   };
 
   const initialCameraPos = useMemo(() => {
-    if (!locations.length) return [0, 120, 160];
+    if (!locations.length) return [0, 150, 210];
     const loc = locations.find(l => toId(l._id) === currentLocId)
               ?? locations.find(l => l.isStartingLocation)
               ?? locations[0];
     const wx = ((loc?.mapCoords?.x ?? 50) - 50) * MAP_SCALE;
     const wz = ((loc?.mapCoords?.y ?? 50) - 50) * MAP_SCALE;
-    return [wx, 120, wz + 160];
+    return [wx, 150, wz + 210];
   }, [locations, currentLocId]);
 
   // Discovery check — runs every 4 seconds, fires once per location

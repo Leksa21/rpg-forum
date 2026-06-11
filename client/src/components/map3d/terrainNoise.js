@@ -1,5 +1,5 @@
 // MAP_SCALE: visual world units per game-coord unit (game coords: 0-100)
-export const MAP_SCALE = 4;
+export const MAP_SCALE = 6;
 
 const SIZE  = 100 * MAP_SCALE; // 400 — world units for full map (game coords 0-100)
 const MAX_H = 28;              // max peak height in world units
@@ -58,9 +58,9 @@ function smoothstep(a, b, t) {
 //  - Eastreach: tall, dramatic peaks
 //  - Southsea:  low, gentle, island-like
 const CONTINENTS = [
-  { cx: 0.24, cz: 0.36, rx: 2.2, rz: 1.75, ridgeAmp: 0.95 },
-  { cx: 0.78, cz: 0.28, rx: 2.6, rz: 2.25, ridgeAmp: 1.30 },
-  { cx: 0.58, cz: 0.83, rx: 3.0, rz: 3.0,  ridgeAmp: 0.45 },
+  { cx: 0.21, cz: 0.30, rx: 2.5, rz: 2.05, ridgeAmp: 0.95 },
+  { cx: 0.80, cz: 0.27, rx: 2.7, rz: 2.25, ridgeAmp: 1.30 },
+  { cx: 0.52, cz: 0.80, rx: 2.8, rz: 2.65, ridgeAmp: 0.50 },
 ];
 
 function continentField(nx, nz, jitter) {
@@ -79,7 +79,7 @@ export function getTerrainHeight(worldX, worldZ, seed = 42) {
   const nz = (worldZ + SIZE / 2) / SIZE;
 
   // Coast jitter shared by all continents — centers differ, so coasts still vary
-  const jitter = (fbm(nx * 3.0, nz * 3.0, seed + 7331, 4) - 0.5) * 0.30;
+  const jitter = (fbm(nx * 3.0, nz * 3.0, seed + 7331, 4) - 0.5) * 0.26;
   const { mask, ridgeAmp } = continentField(nx, nz, jitter);
 
   // Open ocean — gently undulating sea floor

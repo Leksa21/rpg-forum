@@ -9,8 +9,8 @@ function sampleGrid(seed = 42, step = 10) {
   return heights;
 }
 
-test('MAP_SCALE is 4 (4 world units per game-coord unit)', () => {
-  expect(MAP_SCALE).toBe(4);
+test('MAP_SCALE is 6 (6 world units per game-coord unit)', () => {
+  expect(MAP_SCALE).toBe(6);
 });
 
 describe('fbm()', () => {
@@ -62,15 +62,15 @@ describe('getTerrainHeight()', () => {
   });
 
   test('all three continental centers are clearly above sea level', () => {
-    // Centers in normalized space → world = (n - 0.5) * 400
-    expect(getTerrainHeight((0.24 - 0.5) * 400, (0.36 - 0.5) * 400, 42)).toBeGreaterThan(0); // Westmark
-    expect(getTerrainHeight((0.78 - 0.5) * 400, (0.28 - 0.5) * 400, 42)).toBeGreaterThan(0); // Eastreach
-    expect(getTerrainHeight((0.58 - 0.5) * 400, (0.83 - 0.5) * 400, 42)).toBeGreaterThan(0); // Southsea
+    // Centers in normalized space → world = (n - 0.5) * 600 (MAP_SCALE 6)
+    expect(getTerrainHeight((0.21 - 0.5) * 600, (0.30 - 0.5) * 600, 42)).toBeGreaterThan(0); // Westmark
+    expect(getTerrainHeight((0.80 - 0.5) * 600, (0.27 - 0.5) * 600, 42)).toBeGreaterThan(0); // Eastreach
+    expect(getTerrainHeight((0.52 - 0.5) * 600, (0.80 - 0.5) * 600, 42)).toBeGreaterThan(0); // Southsea
   });
 
   test('oceans separate the continents (water in the west-east channel)', () => {
-    // Mid-channel between Westmark and Eastreach, normalized (0.54, 0.08)
-    const h = getTerrainHeight((0.54 - 0.5) * 400, (0.08 - 0.5) * 400, 42);
+    // Mid-channel between Westmark and Eastreach, normalized (0.50, 0.20)
+    const h = getTerrainHeight((0.50 - 0.5) * 600, (0.20 - 0.5) * 600, 42);
     expect(h).toBeLessThan(0);
   });
 });

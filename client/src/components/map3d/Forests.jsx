@@ -5,12 +5,12 @@ import { fbm, getTerrainHeight } from './terrainNoise';
 // Stylized instanced forests — two tree species in 4 draw calls total.
 // Pines: two stacked cones. Broadleaf: a faceted leaf blob on a trunk.
 // Placement is deterministic and clustered into distinct forest patches.
-const HALF      = 256;   // scatter area half-size in world units
-const STEP      = 4.6;   // sampling grid step
-const MAX_TREES = 2200;
+const HALF      = 400;   // scatter area half-size in world units
+const STEP      = 6.2;   // sampling grid step
+const MAX_TREES = 3200;
 
-const MIN_H = 6.0;       // forest biome band
-const MAX_H = 12.6;
+const MIN_H = 5.2;       // forest biome band
+const MAX_H = 11.8;
 const MAX_SLOPE = 2.4;   // skip cliffs (height delta over STEP units)
 
 function hash2(x, z) {
