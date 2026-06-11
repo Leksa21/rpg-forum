@@ -2,8 +2,18 @@ const Travel = require('../models/Travel');
 const Character = require('../models/Character');
 const Location = require('../models/Location');
 
-// durations in seconds
-const DANGER_DURATION = { safe: 30, low: 60, medium: 120, high: 300, deadly: 600 };
+// Travel time scales with map distance (mapCoords are on a 0-100 grid)
+const SECONDS_PER_MAP_UNIT = 5;
+const MIN_TRAVEL_SECS      = 30;
+const MAX_TRAVEL_SECS      = 600;
+
+function travelDurationSecs(from, to) {
+  const dx   = (to.mapCoords?.x ?? 50) - (from.mapCoords?.x ?? 50);
+  const dy   = (to.mapCoords?.y ?? 50) - (from.mapCoords?.y ?? 50);
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const secs = Math.round(dist * SECONDS_PER_MAP_UNIT);
+  return Math.min(MAX_TRAVEL_SECS, Math.max(MIN_TRAVEL_SECS, secs));
+}
 
 const startTravel = async (req, res) => {
   try {
@@ -32,12 +42,8 @@ const startTravel = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Already at destination' });
     }
 
-    const isConnected = fromLocation.connectedTo.some(id => id.equals(destination._id));
-    if (!isConnected) {
-      return res.status(400).json({ success: false, error: 'No route to that location' });
-    }
-
-    const durationSecs = DANGER_DURATION[destination.dangerLevel] || 60;
+    // Open-world travel: any location is reachable, time scales with distance
+    const durationSecs = travelDurationSecs(fromLocation, destination);
     const arrivalTime = new Date(Date.now() + durationSecs * 1000);
 
     const travel = await Travel.create({

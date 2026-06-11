@@ -5,6 +5,8 @@ import { toId } from '../../lib/utils';
 import Terrain from './Terrain';
 import Rivers from './Rivers';
 import Lakes from './Lakes';
+import StylizedWater from './StylizedWater';
+import Forests from './Forests';
 import CrystalPin from './CrystalPin';
 import PlayerMarker from './PlayerMarker';
 import FogPlane from './FogPlane';
@@ -49,17 +51,13 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
       <hemisphereLight args={['#87ceeb', '#4a7a2e', 0.35]} />
 
       {/* Atmospheric haze — starts well beyond terrain centre, fades distant edges */}
-      <fog attach="fog" args={['#87c4e8', 420, 900]} />
+      <fog attach="fog" args={['#9fd0e8', 420, 950]} />
 
-      {/* Ocean plane — larger than the 520-unit terrain plane */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.75, 0]}>
-        <planeGeometry args={[2000, 2000]} />
-        <meshStandardMaterial color="#1a5e90" roughness={0.55} metalness={0.2} />
-      </mesh>
-
+      <StylizedWater seed={42} />
       <Terrain seed={42} />
       <Rivers seed={42} />
       <Lakes seed={42} />
+      <Forests seed={42} />
 
       {locations.map(loc => {
         const mx     = loc.mapCoords?.x ?? 50;

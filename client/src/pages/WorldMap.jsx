@@ -11,12 +11,10 @@ import Topbar from '../components/layout/Topbar';
 import MapScene from '../components/map3d/MapScene';
 import EncounterOverlay from '../components/map3d/EncounterOverlay';
 import { getTerrainHeight, MAP_SCALE } from '../components/map3d/terrainNoise';
+import { travelDurationSecs, formatTravelSecs } from '../lib/travelTime';
 
 const DANGER_COLORS = {
   safe: '#4a9a4a', low: '#7aaa44', medium: '#d4ac0d', high: '#e07020', deadly: '#c0392b',
-};
-const DANGER_TIME = {
-  safe: '30s', low: '1 min', medium: '2 min', high: '5 min', deadly: '10 min',
 };
 
 function useCountdown(arrivalTime) {
@@ -47,7 +45,7 @@ function TravelBar({ travel, onCancel, travelLoading }) {
   );
 }
 
-function LocationPanel({ location, open, onClose, navigate, currentLocId, travel, travelLoading, onTravel, onCancelTravel }) {
+function LocationPanel({ location, open, onClose, navigate, currentLocId, playerCoords, travel, travelLoading, onTravel, onCancelTravel }) {
   const [travelErr, setTravelErr] = useState('');
 
   const isHere    = location ? (currentLocId === null && location.isStartingLocation) || currentLocId === toId(location._id) : false;
@@ -117,7 +115,7 @@ function LocationPanel({ location, open, onClose, navigate, currentLocId, travel
                 <div className="fm-tp-start">
                   <div className="fm-tp-meta">
                     <span>⚔ <span style={{ color: dangerColor }}>{location.dangerLevel}</span> danger</span>
-                    <span>⏱ ~{DANGER_TIME[location.dangerLevel] || '?'}</span>
+                    <span>⏱ ~{formatTravelSecs(travelDurationSecs(playerCoords, location.mapCoords))}</span>
                   </div>
                   {travelErr && <p className="fm-tp-err">{travelErr}</p>}
                   <button className="fm-tp-go" onClick={handleTravel} disabled={travelLoading}>
@@ -281,7 +279,8 @@ export default function WorldMap() {
           <div className="wm3d-canvas-wrap">
             <Canvas
               camera={{ position: initialCameraPos, fov: 50, near: 1, far: 2000 }}
-              gl={{ antialias: true, alpha: false }}
+              gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+              dpr={[1, 1.75]}
             >
               <Suspense fallback={null}>
                 <MapScene
@@ -311,6 +310,7 @@ export default function WorldMap() {
               onClose={handleClose}
               navigate={navigate}
               currentLocId={currentLocId}
+              playerCoords={{ x: playerMapX, y: playerMapY }}
               travel={travel}
               travelLoading={travelLoading}
               onTravel={startTravel}

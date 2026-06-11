@@ -4,7 +4,6 @@ import { useTravel } from '../../hooks/useTravel';
 import { toId } from '../../lib/utils';
 
 const DANGER_COLORS = { safe: '#4a9a4a', low: '#7aaa44', medium: '#d4ac0d', high: '#e07020', deadly: '#c0392b' };
-const DANGER_TIME   = { safe: '30s', low: '1 min', medium: '2 min', high: '5 min', deadly: '10 min' };
 
 function useCountdown(arrivalTime) {
   const calc = () => arrivalTime ? Math.max(0, Math.round((new Date(arrivalTime) - Date.now()) / 1000)) : 0;
@@ -97,7 +96,7 @@ export default function TravelPanel({ locationId, dangerLevel, isStartingLocatio
           {dangerLevel} danger
         </span>
         <span className="tp-sep">·</span>
-        <span className="tp-time-label">~{DANGER_TIME[dangerLevel] || '?'} travel</span>
+        <span className="tp-time-label">travel time depends on distance</span>
       </div>
       <div className="tp-avail-action">
         {error && <span className="tp-err">{error}</span>}
