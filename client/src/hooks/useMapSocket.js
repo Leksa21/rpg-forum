@@ -19,7 +19,7 @@ function computeCurrentMapPos(mapX, mapY, travelInfo) {
   ];
 }
 
-const CLEAR_ENCOUNTER = { active: false, opponent: null, waiting: false, result: null, battleId: null };
+const CLEAR_ENCOUNTER = { active: false, opponent: null, waiting: false, result: null, battleId: null, deadline: null };
 
 export function useMapSocket(token, mapX, mapY, travelInfo, myCharId) {
   const [otherPlayers, setOtherPlayers] = useState([]);
@@ -88,14 +88,19 @@ export function useMapSocket(token, mapX, mapY, travelInfo, myCharId) {
       });
     });
 
-    socket.on('map:encounter', ({ opponent }) => {
-      encounterActiveRef.current  = true;
-      frozenOpponentIdRef.current = opponent.charId;
-      setEncounter({ active: true, opponent, waiting: false, result: null });
+    socket.on('map:encounter', ({ opponent, deadline }) => {
+      setEncounter(prev => {
+        // Never let a new encounter stomp an unviewed result (e.g. a pending
+        // battle redirect) — the server cooldown makes this rare, but be safe
+        if (prev.active && (prev.result || prev.battleId)) return prev;
+        encounterActiveRef.current  = true;
+        frozenOpponentIdRef.current = opponent.charId;
+        return { active: true, opponent, waiting: false, result: null, battleId: null, deadline: deadline ?? null };
+      });
     });
 
     socket.on('map:encounter:result', ({ outcome, myAction, theirAction, battleId }) => {
-      setEncounter(prev => ({ ...prev, waiting: false, result: { outcome, myAction, theirAction }, battleId: battleId || null }));
+      setEncounter(prev => ({ ...prev, waiting: false, result: { outcome, myAction, theirAction }, battleId: battleId || null, deadline: null }));
       if (!battleId) {
         setTimeout(() => {
           encounterActiveRef.current  = false;

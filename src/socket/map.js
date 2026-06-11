@@ -6,8 +6,14 @@ const { createEncounterBattle } = require('../services/battleService');
 const connectedPlayers = new Map();
 // pairKey → { charId1, charId2, socketId1, socketId2, action1, action2, timeout }
 const activeEncounters = new Map();
+// pairKey → cooldown expiry timestamp; prevents the proximity loop from
+// re-triggering an encounter the moment the previous one resolves
+const encounterCooldowns = new Map();
 
-const ENCOUNTER_RADIUS = 6; // map units (0-100 scale)
+const ENCOUNTER_RADIUS      = 6;          // map units (0-100 scale)
+const ENCOUNTER_DECISION_MS = 30 * 1000;  // time to pick an action before auto-greet
+const COOLDOWN_MS           = 2 * 60 * 1000;
+const COOLDOWN_BATTLE_MS    = 10 * 60 * 1000;
 
 function pairKey(a, b) {
   return [a, b].sort().join('::');
@@ -21,13 +27,13 @@ function getSocketIdByCharId(charId) {
 }
 
 function resolveOutcome(myAction, theirAction) {
-  if (myAction === 'flee')   return { type: 'fled',      message: 'Pobjegli ste!' };
-  if (theirAction === 'flee') return { type: 'they_fled', message: 'Protivnik je pobjegao.' };
-  if (myAction === 'greet'  && theirAction === 'greet')  return { type: 'friendly', message: 'Pozdravili ste se!' };
-  if (myAction === 'attack' && theirAction === 'attack') return { type: 'clash',    message: 'Okršaj! Oboje napadate!' };
-  if (myAction === 'attack' && theirAction === 'greet')  return { type: 'attacked', message: 'Napali ste iznenada!' };
-  if (myAction === 'greet'  && theirAction === 'attack') return { type: 'ambushed', message: 'Napadnuti ste dok ste pozdravili!' };
-  return { type: 'unknown', message: 'Susret je završen.' };
+  if (myAction === 'flee')   return { type: 'fled',      message: 'You slip away from the encounter.' };
+  if (theirAction === 'flee') return { type: 'they_fled', message: 'Your opponent fled into the wilds.' };
+  if (myAction === 'greet'  && theirAction === 'greet')  return { type: 'friendly', message: 'You greet each other and part ways in peace.' };
+  if (myAction === 'attack' && theirAction === 'attack') return { type: 'clash',    message: 'Steel meets steel — battle begins!' };
+  if (myAction === 'attack' && theirAction === 'greet')  return { type: 'attacked', message: 'You strike while they offer a greeting!' };
+  if (myAction === 'greet'  && theirAction === 'attack') return { type: 'ambushed', message: 'You are ambushed mid-greeting!' };
+  return { type: 'unknown', message: 'The encounter ends.' };
 }
 
 async function resolveEncounter(mapNs, key) {
@@ -36,6 +42,9 @@ async function resolveEncounter(mapNs, key) {
 
   clearTimeout(enc.timeout);
   activeEncounters.delete(key);
+  // Cooldown starts immediately so the proximity loop cannot re-trigger
+  // this pair while the resolution (and battle creation) is in flight
+  encounterCooldowns.set(key, Date.now() + COOLDOWN_MS);
 
   const a1 = enc.action1 || 'greet';
   const a2 = enc.action2 || 'greet';
@@ -50,6 +59,8 @@ async function resolveEncounter(mapNs, key) {
     try {
       const battle = await createEncounterBattle(enc.charId1, enc.charId2);
       const battleId = battle._id.toString();
+      // A real battle started — keep this pair from re-encountering for longer
+      encounterCooldowns.set(key, Date.now() + COOLDOWN_BATTLE_MS);
       if (sock1) mapNs.to(sock1).emit('map:encounter:result', { outcome: outcome1, myAction: a1, theirAction: a2, battleId });
       if (sock2) mapNs.to(sock2).emit('map:encounter:result', { outcome: outcome2, myAction: a2, theirAction: a1, battleId });
       return;
@@ -99,17 +110,25 @@ const setupMap = (io) => {
     });
     mapNs.emit('map:positions', positions);
 
+    // Drop expired cooldowns
+    const nowTs = Date.now();
+    for (const [key, expiry] of encounterCooldowns) {
+      if (expiry <= nowTs) encounterCooldowns.delete(key);
+    }
+
     // Encounter proximity check
     for (let i = 0; i < players.length; i++) {
       for (let j = i + 1; j < players.length; j++) {
         const a = players[i], b = players[j];
         const key = pairKey(a.charId, b.charId);
         if (activeEncounters.has(key)) continue;
+        if (encounterCooldowns.has(key)) continue;
         // Encounter only fires when both players are actively traveling (open world)
         if (a.atLocation || b.atLocation) continue;
         const dx = a.mapX - b.mapX, dy = a.mapY - b.mapY;
         if (Math.sqrt(dx * dx + dy * dy) < ENCOUNTER_RADIUS) {
-          const timeout = setTimeout(() => resolveEncounter(mapNs, key), 30000);
+          const deadline = Date.now() + ENCOUNTER_DECISION_MS;
+          const timeout  = setTimeout(() => resolveEncounter(mapNs, key), ENCOUNTER_DECISION_MS);
           activeEncounters.set(key, {
             charId1: a.charId, charId2: b.charId,
             socketId1: a.socketId, socketId2: b.socketId,
@@ -118,9 +137,11 @@ const setupMap = (io) => {
           });
           mapNs.to(a.socketId).emit('map:encounter', {
             opponent: { charId: b.charId, name: b.name, class: b.class },
+            deadline,
           });
           mapNs.to(b.socketId).emit('map:encounter', {
             opponent: { charId: a.charId, name: a.name, class: a.class },
+            deadline,
           });
         }
       }
@@ -157,6 +178,9 @@ const setupMap = (io) => {
         const isFirst  = enc.charId1 === charId;
         const isSecond = enc.charId2 === charId;
         if (!isFirst && !isSecond) continue;
+        // First choice is binding — ignore repeated clicks
+        if (isFirst && enc.action1) return;
+        if (isSecond && enc.action2) return;
         if (isFirst)  enc.action1 = action;
         else          enc.action2 = action;
         // Flee or both responded → resolve immediately
