@@ -49,9 +49,9 @@ describe('getTerrainHeight()', () => {
     expect(getTerrainHeight(0, 0, 1)).not.toBe(getTerrainHeight(0, 0, 2));
   });
 
-  test('height is always within the theoretical range [-2.2, 28]', () => {
+  test('height is always within the theoretical range [-8, 28]', () => {
     const heights = sampleGrid(42);
-    expect(Math.min(...heights)).toBeGreaterThanOrEqual(-2.21);
+    expect(Math.min(...heights)).toBeGreaterThanOrEqual(-8.01);
     expect(Math.max(...heights)).toBeLessThanOrEqual(28.01);
   });
 
@@ -61,9 +61,16 @@ describe('getTerrainHeight()', () => {
     expect(heights.some(h => h < 0)).toBe(true);
   });
 
-  test('continental centers are clearly above sea level', () => {
-    // Continent 1 is centered at normalized (0.25, 0.5) → worldX = -100, worldZ = 0
-    const h = getTerrainHeight(-100, 0, 42);
-    expect(h).toBeGreaterThan(0);
+  test('all three continental centers are clearly above sea level', () => {
+    // Centers in normalized space → world = (n - 0.5) * 400
+    expect(getTerrainHeight((0.24 - 0.5) * 400, (0.36 - 0.5) * 400, 42)).toBeGreaterThan(0); // Westmark
+    expect(getTerrainHeight((0.78 - 0.5) * 400, (0.28 - 0.5) * 400, 42)).toBeGreaterThan(0); // Eastreach
+    expect(getTerrainHeight((0.58 - 0.5) * 400, (0.83 - 0.5) * 400, 42)).toBeGreaterThan(0); // Southsea
+  });
+
+  test('oceans separate the continents (water in the west-east channel)', () => {
+    // Mid-channel between Westmark and Eastreach, normalized (0.54, 0.08)
+    const h = getTerrainHeight((0.54 - 0.5) * 400, (0.08 - 0.5) * 400, 42);
+    expect(h).toBeLessThan(0);
   });
 });

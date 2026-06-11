@@ -3,8 +3,6 @@ import { OrbitControls, Sky } from '@react-three/drei';
 import { getTerrainHeight, MAP_SCALE } from './terrainNoise';
 import { toId } from '../../lib/utils';
 import Terrain from './Terrain';
-import Rivers from './Rivers';
-import Lakes from './Lakes';
 import StylizedWater from './StylizedWater';
 import Forests from './Forests';
 import CrystalPin from './CrystalPin';
@@ -53,10 +51,10 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
       {/* Atmospheric haze — starts well beyond terrain centre, fades distant edges */}
       <fog attach="fog" args={['#9fd0e8', 420, 950]} />
 
+      {/* Rivers and lakes are carved into the terrain heightfield itself —
+          the global water plane fills them with animated water and shore foam */}
       <StylizedWater seed={42} />
       <Terrain seed={42} />
-      <Rivers seed={42} />
-      <Lakes seed={42} />
       <Forests seed={42} />
 
       {locations.map(loc => {

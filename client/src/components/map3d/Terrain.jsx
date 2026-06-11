@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { fbm, getTerrainHeight } from './terrainNoise';
 
 const SIZE = 520;
-const SEGS = 240;
+const SEGS = 300; // ~90k verts — fine for a single static mesh, keeps carved rivers smooth
 
 // ─── Vertex Shader ────────────────────────────────────────────────────────────
 const VERT = /* glsl */`
