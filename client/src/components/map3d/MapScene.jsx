@@ -5,7 +5,8 @@ import { toId } from '../../lib/utils';
 import Terrain from './Terrain';
 import StylizedWater from './StylizedWater';
 import Forests from './Forests';
-import CrystalPin from './CrystalPin';
+import Clouds from './Clouds';
+import LocationMarker from './LocationMarker';
 import PlayerMarker from './PlayerMarker';
 import FogPlane from './FogPlane';
 import OtherPlayerDot from './OtherPlayerDot';
@@ -56,13 +57,14 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
       <StylizedWater seed={42} />
       <Terrain seed={42} />
       <Forests seed={42} />
+      <Clouds seed={42} />
 
       {locations.map(loc => {
         const mx     = loc.mapCoords?.x ?? 50;
         const my     = loc.mapCoords?.y ?? 50;
         const isHere = !!currentLoc && toId(loc._id) === toId(currentLoc._id);
         return (
-          <CrystalPin
+          <LocationMarker
             key={toId(loc._id)}
             location={loc}
             mapX={mx}
