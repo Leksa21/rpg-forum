@@ -1,7 +1,7 @@
 // MAP_SCALE: visual world units per game-coord unit (game coords: 0-100)
 export const MAP_SCALE = 6;
 
-const SIZE  = 100 * MAP_SCALE; // 400 — world units for full map (game coords 0-100)
+const SIZE  = 100 * MAP_SCALE; // 600 — world units for full map (game coords 0-100)
 const MAX_H = 28;              // max peak height in world units
 
 export const WATER_LEVEL = -0.55; // global water plane height (StylizedWater)
@@ -54,15 +54,17 @@ function smoothstep(a, b, t) {
 
 // ── Three continents ─────────────────────────────────────────────────────────
 // Each entry: center (normalized 0-1), inverse radius per axis, mountain factor.
-// Compact, well-separated landmasses adrift in open ocean — wide sea channels
-// between them. Higher inverse-radius = smaller continent.
+// Large, well-separated landmasses that dominate the frame — they grow outward
+// toward the corners so the empty ocean is pushed to a moderate border instead
+// of swallowing the world, while real sea channels still divide the three.
+// Lower inverse-radius = bigger continent.
 //  - Westmark:  temperate mainland, west — central spine, the realm's heart
 //  - Eastreach: dramatic snow peaks, north-east — dwarven holds & cliffs
 //  - Southsea:  low drowned isles, south — marsh and ruins
 const CONTINENTS = [
-  { cx: 0.21, cz: 0.39, rx: 4.0, rz: 3.5, ridgeAmp: 0.95 },
-  { cx: 0.82, cz: 0.25, rx: 4.1, rz: 3.7, ridgeAmp: 1.45 },
-  { cx: 0.52, cz: 0.85, rx: 4.4, rz: 4.1, ridgeAmp: 0.55 },
+  { cx: 0.18, cz: 0.40, rx: 2.25, rz: 2.15, ridgeAmp: 0.95 },
+  { cx: 0.84, cz: 0.22, rx: 2.25, rz: 2.20, ridgeAmp: 1.45 },
+  { cx: 0.52, cz: 0.86, rx: 2.30, rz: 2.20, ridgeAmp: 0.55 },
 ];
 
 function continentField(nx, nz, jitter) {

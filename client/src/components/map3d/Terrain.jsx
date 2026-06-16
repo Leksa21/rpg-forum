@@ -3,8 +3,8 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { fbm, getTerrainHeight } from './terrainNoise';
 
-const SIZE = 880;
-const SEGS = 360; // ~130k verts — single static mesh, keeps carved rivers smooth
+const SIZE = 1100; // room for the enlarged continents; rim stays underwater so no visible edge
+const SEGS = 440;  // ~195k verts — keeps the same vertex density as the smaller mesh
 
 // ─── Vertex Shader ────────────────────────────────────────────────────────────
 const VERT = /* glsl */`
