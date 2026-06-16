@@ -54,13 +54,15 @@ function smoothstep(a, b, t) {
 
 // ── Three continents ─────────────────────────────────────────────────────────
 // Each entry: center (normalized 0-1), inverse radius per axis, mountain factor.
-//  - Westmark:  the large temperate mainland with a central mountain spine
-//  - Eastreach: tall, dramatic peaks
-//  - Southsea:  low, gentle, island-like
+// Compact, well-separated landmasses adrift in open ocean — wide sea channels
+// between them. Higher inverse-radius = smaller continent.
+//  - Westmark:  temperate mainland, west — central spine, the realm's heart
+//  - Eastreach: dramatic snow peaks, north-east — dwarven holds & cliffs
+//  - Southsea:  low drowned isles, south — marsh and ruins
 const CONTINENTS = [
-  { cx: 0.21, cz: 0.30, rx: 2.5, rz: 2.05, ridgeAmp: 0.95 },
-  { cx: 0.80, cz: 0.27, rx: 2.7, rz: 2.25, ridgeAmp: 1.30 },
-  { cx: 0.52, cz: 0.80, rx: 2.8, rz: 2.65, ridgeAmp: 0.50 },
+  { cx: 0.26, cz: 0.40, rx: 5.2, rz: 4.7, ridgeAmp: 0.95 },
+  { cx: 0.80, cz: 0.26, rx: 5.6, rz: 5.1, ridgeAmp: 1.45 },
+  { cx: 0.52, cz: 0.84, rx: 6.4, rz: 6.0, ridgeAmp: 0.55 },
 ];
 
 function continentField(nx, nz, jitter) {

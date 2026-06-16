@@ -1,11 +1,10 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import { OrbitControls } from '@react-three/drei';
 import { getTerrainHeight, MAP_SCALE } from './terrainNoise';
 import { toId } from '../../lib/utils';
 import Terrain from './Terrain';
 import StylizedWater from './StylizedWater';
 import Forests from './Forests';
-import StoneFloor from './StoneFloor';
 import LocationMarker from './LocationMarker';
 import PlayerMarker from './PlayerMarker';
 import FogPlane from './FogPlane';
@@ -29,24 +28,32 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
     return [wx, Math.max(0, getTerrainHeight(wx, wz)) + 1, wz];
   }, [playerMapX, playerMapY]);
 
+  // Center the orbit on the player's location once on mount and whenever the
+  // location actually changes (e.g. after travel). We set it imperatively
+  // rather than as a controlled prop so ordinary re-renders never reset the
+  // camera mid-drag — that was the source of the jittery movement.
+  useEffect(() => {
+    const controls = controlsRef.current;
+    if (!controls) return;
+    controls.target.set(orbitTarget[0], orbitTarget[1], orbitTarget[2]);
+    controls.update();
+  }, [orbitTarget]);
+
   return (
     <>
-      {/* The map is a crafted relief artifact resting on a stone floor in a dark hall */}
-      <color attach="background" args={['#0e0b08']} />
+      {/* Three continents adrift in open ocean that runs to the horizon */}
+      <color attach="background" args={['#16252e']} />
 
-      {/* Museum-style lighting — one warm key light picks the artifact out of the dark */}
-      <ambientLight intensity={0.34} color="#b7a489" />
-      <directionalLight position={[300, 420, 200]} intensity={1.55} color="#fff0d2" castShadow={false} />
-      <hemisphereLight args={['#5a4a36', '#0a0806', 0.45]} />
+      {/* Overcast sea light — warm key sun, cool sky/sea bounce */}
+      <ambientLight intensity={0.45} color="#a9b8c0" />
+      <directionalLight position={[280, 400, 180]} intensity={1.45} color="#ffeccb" castShadow={false} />
+      <hemisphereLight args={['#9fb8c8', '#10202a', 0.55]} />
 
-      {/* Dark hall haze — fades the floor and hides the model's square edges */}
-      <fog attach="fog" args={['#0e0b08', 360, 980]} />
-
-      {/* Stone floor + basin rim that frames the world model */}
-      <StoneFloor />
+      {/* Sea haze — the ocean fades seamlessly into the horizon */}
+      <fog attach="fog" args={['#16252e', 320, 1500]} />
 
       {/* Rivers and lakes are carved into the terrain heightfield itself —
-          the global water plane fills them with animated water and shore foam */}
+          the global water plane fills them, surrounded by open ocean to the horizon */}
       <StylizedWater seed={42} />
       <Terrain seed={42} />
       <Forests seed={42} />
@@ -82,22 +89,25 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
         discoveredLocations={discoveredLocations}
       />
 
-      {/* Left-drag = orbit 360°, right-drag = pan, scroll = zoom.
-          Polar angle is clamped so the camera can never dip below the
-          horizon — you always look down onto the model, never underneath it. */}
+      {/* Left-drag = orbit 360°, right-drag = pan along the sea, scroll = zoom.
+          Polar angle is clamped so the camera can never dip below the horizon —
+          you always look down onto the world, never underneath it.
+          Target is set imperatively (see effect above), not as a prop. */}
       <OrbitControls
         ref={controlsRef}
-        target={orbitTarget}
+        makeDefault
         enableRotate
         enableDamping
-        dampingFactor={0.08}
+        dampingFactor={0.09}
         minDistance={70}
-        maxDistance={560}
-        minPolarAngle={0.18}
-        maxPolarAngle={1.28}
+        maxDistance={920}
+        minPolarAngle={0.15}
+        maxPolarAngle={1.32}
         enablePan
-        panSpeed={0.9}
-        rotateSpeed={0.7}
+        screenSpacePanning={false}
+        panSpeed={0.8}
+        rotateSpeed={0.6}
+        zoomSpeed={0.9}
       />
     </>
   );

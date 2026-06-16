@@ -5,7 +5,7 @@ import { getTerrainHeight } from './terrainNoise';
 
 // Animated painterly ocean. Shore foam is driven by a per-vertex mask
 // precomputed from the terrain height — zero per-frame CPU cost.
-const SIZE  = 770;   // tucks just inside the stone rim (world edge ~380)
+const SIZE  = 980;   // detailed ocean surrounding the continents (world ±490)
 const SEGS  = 200;
 const WATER_Y = -0.55;
 
@@ -108,6 +108,14 @@ export default function StylizedWater({ seed = 42 }) {
     material.uniforms.uTime.value = clock.elapsedTime;
   });
 
-  // The world is now a contained model on a stone floor — no open horizon ocean.
-  return <mesh geometry={geometry} material={material} position={[0, WATER_Y, 0]} />;
+  return (
+    <>
+      <mesh geometry={geometry} material={material} position={[0, WATER_Y, 0]} />
+      {/* Open ocean running out to the horizon, blended into the sea haze by fog */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, WATER_Y - 0.3, 0]}>
+        <planeGeometry args={[9000, 9000]} />
+        <meshBasicMaterial color="#14222b" />
+      </mesh>
+    </>
+  );
 }
