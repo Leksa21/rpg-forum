@@ -60,9 +60,9 @@ function smoothstep(a, b, t) {
 //  - Eastreach: dramatic snow peaks, north-east — dwarven holds & cliffs
 //  - Southsea:  low drowned isles, south — marsh and ruins
 const CONTINENTS = [
-  { cx: 0.26, cz: 0.40, rx: 5.2, rz: 4.7, ridgeAmp: 0.95 },
-  { cx: 0.80, cz: 0.26, rx: 5.6, rz: 5.1, ridgeAmp: 1.45 },
-  { cx: 0.52, cz: 0.84, rx: 6.4, rz: 6.0, ridgeAmp: 0.55 },
+  { cx: 0.21, cz: 0.39, rx: 4.0, rz: 3.5, ridgeAmp: 0.95 },
+  { cx: 0.82, cz: 0.25, rx: 4.1, rz: 3.7, ridgeAmp: 1.45 },
+  { cx: 0.52, cz: 0.85, rx: 4.4, rz: 4.1, ridgeAmp: 0.55 },
 ];
 
 function continentField(nx, nz, jitter) {
@@ -80,8 +80,9 @@ export function getTerrainHeight(worldX, worldZ, seed = 42) {
   const nx = (worldX + SIZE / 2) / SIZE;
   const nz = (worldZ + SIZE / 2) / SIZE;
 
-  // Coast jitter shared by all continents — centers differ, so coasts still vary
-  const jitter = (fbm(nx * 3.0, nz * 3.0, seed + 7331, 4) - 0.5) * 0.26;
+  // Coast jitter shared by all continents — larger amplitude for more varied,
+  // less blobby coastlines (bays, capes, peninsulas)
+  const jitter = (fbm(nx * 3.0, nz * 3.0, seed + 7331, 4) - 0.5) * 0.34;
   const { mask, ridgeAmp } = continentField(nx, nz, jitter);
 
   // Open ocean — gently undulating sea floor

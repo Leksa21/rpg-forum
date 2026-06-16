@@ -5,8 +5,11 @@ import { getTerrainHeight } from './terrainNoise';
 
 // Animated painterly ocean. Shore foam is driven by a per-vertex mask
 // precomputed from the terrain height — zero per-frame CPU cost.
-const SIZE  = 980;   // detailed ocean surrounding the continents (world ±490)
-const SEGS  = 200;
+// One large ocean surface that runs far past the fog horizon, so the sea has
+// no visible edge — it fades seamlessly into the haze instead of ending in a
+// square. Detail stays fine enough near the coasts for the foam band to read.
+const SIZE  = 3200;  // world ±1600 — beyond the fog far-plane (1500)
+const SEGS  = 360;
 const WATER_Y = -0.55;
 
 const VERT = /* glsl */`
@@ -108,14 +111,7 @@ export default function StylizedWater({ seed = 42 }) {
     material.uniforms.uTime.value = clock.elapsedTime;
   });
 
-  return (
-    <>
-      <mesh geometry={geometry} material={material} position={[0, WATER_Y, 0]} />
-      {/* Open ocean running out to the horizon, blended into the sea haze by fog */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, WATER_Y - 0.3, 0]}>
-        <planeGeometry args={[9000, 9000]} />
-        <meshBasicMaterial color="#14222b" />
-      </mesh>
-    </>
-  );
+  // Single seamless ocean — no separate horizon plane, so there is no edge
+  // or height step where one ocean meets another. Fog dissolves the far rim.
+  return <mesh geometry={geometry} material={material} position={[0, WATER_Y, 0]} />;
 }
