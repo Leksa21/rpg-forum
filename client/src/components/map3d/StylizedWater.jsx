@@ -5,7 +5,7 @@ import { getTerrainHeight } from './terrainNoise';
 
 // Animated painterly ocean. Shore foam is driven by a per-vertex mask
 // precomputed from the terrain height — zero per-frame CPU cost.
-const SIZE  = 1180;
+const SIZE  = 770;   // tucks just inside the stone rim (world edge ~380)
 const SEGS  = 200;
 const WATER_Y = -0.55;
 
@@ -53,23 +53,23 @@ void main() {
   float w2 = vn(vXZ * 0.150 - vec2(uTime * 0.04,  uTime * 0.06));
   float wave = w1 * 0.65 + w2 * 0.35;
 
-  // Painterly banded water color, deep → shallow
-  vec3 deep    = vec3(0.10, 0.32, 0.62);
-  vec3 mid     = vec3(0.16, 0.46, 0.72);
-  vec3 shallow = vec3(0.36, 0.76, 0.85);
+  // Dark relief-map water, deep → shallow — muted ink teal
+  vec3 deep    = vec3(0.04, 0.11, 0.18);
+  vec3 mid     = vec3(0.07, 0.20, 0.30);
+  vec3 shallow = vec3(0.16, 0.36, 0.42);
   float band   = floor((1.0 - vDepth) * 3.0 + wave * 0.9) / 3.0;
   vec3 col     = mix(deep, mid, clamp(band, 0.0, 1.0));
   col          = mix(col, shallow, (1.0 - vDepth) * 0.55);
 
-  // Sun sparkle on wave crests
-  float sparkle = smoothstep(0.78, 0.95, w2) * 0.35;
-  col += vec3(1.0, 0.95, 0.8) * sparkle;
+  // Restrained warm key-light glint on wave crests
+  float sparkle = smoothstep(0.82, 0.96, w2) * 0.16;
+  col += vec3(1.0, 0.92, 0.72) * sparkle;
 
   // Animated foam along the shoreline — breathing in and out
   float pulse = 0.5 + 0.5 * sin(uTime * 0.9 + vXZ.x * 0.05 + vXZ.y * 0.04);
   float foamN = vn(vXZ * 0.45 + vec2(uTime * 0.08, 0.0));
   float foam  = smoothstep(0.45, 0.85, vFoam * (0.70 + 0.30 * pulse) + foamN * 0.18 - 0.12);
-  col = mix(col, vec3(0.94, 0.97, 1.0), foam * 0.85);
+  col = mix(col, vec3(0.62, 0.66, 0.68), foam * 0.6);
 
   gl_FragColor = vec4(col, 1.0);
 }
@@ -108,14 +108,6 @@ export default function StylizedWater({ seed = 42 }) {
     material.uniforms.uTime.value = clock.elapsedTime;
   });
 
-  return (
-    <>
-      <mesh geometry={geometry} material={material} position={[0, WATER_Y, 0]} />
-      {/* Far horizon ocean beyond the detailed plane */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, WATER_Y - 0.2, 0]}>
-        <planeGeometry args={[4000, 4000]} />
-        <meshBasicMaterial color="#16456e" />
-      </mesh>
-    </>
-  );
+  // The world is now a contained model on a stone floor — no open horizon ocean.
+  return <mesh geometry={geometry} material={material} position={[0, WATER_Y, 0]} />;
 }

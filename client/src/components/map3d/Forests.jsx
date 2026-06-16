@@ -19,15 +19,16 @@ function hash2(x, z) {
   return ((h ^ (h >>> 16)) >>> 0) / 0xFFFFFFFF;
 }
 
+// Muted, weathered greens to match the relief-map palette
 const PINE_GREENS = [
-  new THREE.Color('#1f5c1a'),
-  new THREE.Color('#2a6e22'),
-  new THREE.Color('#16491a'),
+  new THREE.Color('#1b3a1c'),
+  new THREE.Color('#244a24'),
+  new THREE.Color('#142f17'),
 ];
 const LEAF_GREENS = [
-  new THREE.Color('#3f8a2e'),
-  new THREE.Color('#4f9a38'),
-  new THREE.Color('#356f26'),
+  new THREE.Color('#2c4a22'),
+  new THREE.Color('#375a2b'),
+  new THREE.Color('#243d1d'),
 ];
 
 export default function Forests({ seed = 42 }) {

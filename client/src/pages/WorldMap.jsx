@@ -208,7 +208,7 @@ export default function WorldMap() {
               ?? locations[0];
     const wx = ((loc?.mapCoords?.x ?? 50) - 50) * MAP_SCALE;
     const wz = ((loc?.mapCoords?.y ?? 50) - 50) * MAP_SCALE;
-    return [wx, 150, wz + 210];
+    return [wx, 185, wz + 240];
   }, [locations, currentLocId]);
 
   // Discovery check — runs every 4 seconds, fires once per location
@@ -328,7 +328,7 @@ export default function WorldMap() {
 
             {/* Controls hint */}
             <div className="wm3d-hint">
-              🖱 Drag to pan · Scroll to zoom · Click a crystal to travel
+              🖱 Drag to orbit · Right-drag to pan · Scroll to zoom · Click a location to travel
             </div>
           </div>
         )}

@@ -1,11 +1,11 @@
 import { useMemo, useRef } from 'react';
-import { OrbitControls, Sky } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import { getTerrainHeight, MAP_SCALE } from './terrainNoise';
 import { toId } from '../../lib/utils';
 import Terrain from './Terrain';
 import StylizedWater from './StylizedWater';
 import Forests from './Forests';
-import Clouds from './Clouds';
+import StoneFloor from './StoneFloor';
 import LocationMarker from './LocationMarker';
 import PlayerMarker from './PlayerMarker';
 import FogPlane from './FogPlane';
@@ -31,31 +31,25 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
 
   return (
     <>
-      {/* Soft anime sky */}
-      <color attach="background" args={['#8fcbe8']} />
-      <Sky
-        distance={450000}
-        sunPosition={[120, 65, -220]}
-        turbidity={3.5}
-        rayleigh={0.9}
-        mieCoefficient={0.004}
-        mieDirectionalG={0.8}
-      />
+      {/* The map is a crafted relief artifact resting on a stone floor in a dark hall */}
+      <color attach="background" args={['#0e0b08']} />
 
-      {/* Bright soft lighting — pastel, low contrast */}
-      <ambientLight intensity={0.6} color="#dcecfa" />
-      <directionalLight position={[60, 80, -60]} intensity={1.25} color="#ffeec2" />
-      <hemisphereLight args={['#9ed4f0', '#5a8a3e', 0.4]} />
+      {/* Museum-style lighting — one warm key light picks the artifact out of the dark */}
+      <ambientLight intensity={0.34} color="#b7a489" />
+      <directionalLight position={[300, 420, 200]} intensity={1.55} color="#fff0d2" castShadow={false} />
+      <hemisphereLight args={['#5a4a36', '#0a0806', 0.45]} />
 
-      {/* Atmospheric haze — soft blue distance fade for the bigger world */}
-      <fog attach="fog" args={['#aed9ee', 650, 1700]} />
+      {/* Dark hall haze — fades the floor and hides the model's square edges */}
+      <fog attach="fog" args={['#0e0b08', 360, 980]} />
+
+      {/* Stone floor + basin rim that frames the world model */}
+      <StoneFloor />
 
       {/* Rivers and lakes are carved into the terrain heightfield itself —
           the global water plane fills them with animated water and shore foam */}
       <StylizedWater seed={42} />
       <Terrain seed={42} />
       <Forests seed={42} />
-      <Clouds seed={42} />
 
       {locations.map(loc => {
         const mx     = loc.mapCoords?.x ?? 50;
@@ -88,18 +82,22 @@ export default function MapScene({ locations, currentLocId, travelInfo, discover
         discoveredLocations={discoveredLocations}
       />
 
-      {/* Drag = pan, scroll = zoom, no rotation */}
+      {/* Left-drag = orbit 360°, right-drag = pan, scroll = zoom.
+          Polar angle is clamped so the camera can never dip below the
+          horizon — you always look down onto the model, never underneath it. */}
       <OrbitControls
         ref={controlsRef}
         target={orbitTarget}
-        enableRotate={false}
+        enableRotate
         enableDamping
         dampingFactor={0.08}
-        minDistance={40}
-        maxDistance={1400}
+        minDistance={70}
+        maxDistance={560}
+        minPolarAngle={0.18}
+        maxPolarAngle={1.28}
         enablePan
-        panSpeed={1.0}
-        mouseButtons={{ LEFT: 2, MIDDLE: 1, RIGHT: 2 }}
+        panSpeed={0.9}
+        rotateSpeed={0.7}
       />
     </>
   );

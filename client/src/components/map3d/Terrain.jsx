@@ -56,22 +56,22 @@ float vn(vec2 p) {
 // 2-octave fbm for fine surface detail
 float fn(vec2 p) { return vn(p) * 0.62 + vn(p * 2.2) * 0.38; }
 
-// ── Anime fantasy biome palette — every transition is a smooth gradient ──
+// ── Aged relief-map palette — muted, earthy, hand-painted cartography ──
 vec3 terrainColor(vec2 xz, float h, float sl, float lo, float md) {
   float hi = fn(xz * 1.2);              // fine hand-painted grain
   float g  = lo * 0.5 + md * 0.3 + hi * 0.2; // patchiness driver
 
-  // Palette — saturated Ghibli-style colors
-  vec3 deepW   = vec3(0.09, 0.30, 0.60);
-  vec3 shalW   = vec3(0.33, 0.75, 0.84);
-  vec3 sandC   = vec3(0.97, 0.88, 0.62);
-  vec3 grassA  = vec3(0.55, 0.85, 0.36);  // sunlit spring green
-  vec3 grassB  = vec3(0.36, 0.72, 0.26);  // meadow
-  vec3 forestC = vec3(0.17, 0.52, 0.22);  // emerald canopy
-  vec3 moorC   = vec3(0.62, 0.66, 0.34);  // golden-olive uplands
-  vec3 rockC   = vec3(0.56, 0.55, 0.70);  // lavender-blue anime rock
-  vec3 rockHi  = vec3(0.74, 0.74, 0.87);
-  vec3 snowC   = vec3(0.97, 0.98, 1.00);
+  // Palette — desaturated, weathered tones of a crafted relief model
+  vec3 deepW   = vec3(0.05, 0.13, 0.22);  // ink-dark sea
+  vec3 shalW   = vec3(0.14, 0.34, 0.42);  // shallow teal
+  vec3 sandC   = vec3(0.74, 0.65, 0.46);  // worn sand / coastline
+  vec3 grassA  = vec3(0.40, 0.46, 0.27);  // dry olive lowland
+  vec3 grassB  = vec3(0.28, 0.38, 0.22);  // shaded meadow
+  vec3 forestC = vec3(0.16, 0.30, 0.18);  // deep muted woodland
+  vec3 moorC   = vec3(0.52, 0.45, 0.30);  // ochre uplands / moor
+  vec3 rockC   = vec3(0.42, 0.40, 0.40);  // slate rock
+  vec3 rockHi  = vec3(0.58, 0.56, 0.56);
+  vec3 snowC   = vec3(0.86, 0.86, 0.84);  // off-white aged snow
 
   // Continuous vertical gradient — no hard bands anywhere
   vec3 col = mix(deepW, shalW, smoothstep(-3.5, -0.2, h));
@@ -92,9 +92,14 @@ vec3 terrainColor(vec2 xz, float h, float sl, float lo, float md) {
   float cliff = smoothstep(0.40, 0.62, sl) * smoothstep(0.6, 2.2, h);
   col = mix(col, mix(rockC * 0.82, rockHi * 0.9, hi), cliff * 0.85);
 
-  // Large painterly wash — warm and cool patches drifting across the world
+  // Contour lines — faint darkened rings at regular elevations, the
+  // signature of a carved relief map. Only on land, fading near the coast.
+  float contour = smoothstep(0.55, 0.5, abs(fract(h / 2.4 + hi * 0.06) - 0.5) * 2.0 - 0.86);
+  col *= 1.0 - contour * 0.22 * smoothstep(0.3, 1.4, h);
+
+  // Large painterly wash — aged warm/cool patches drifting across the parchment
   float macro = fn(xz * 0.0045);
-  col *= mix(vec3(0.94, 1.00, 0.90), vec3(1.06, 1.00, 1.07), macro);
+  col *= mix(vec3(0.88, 0.86, 0.78), vec3(1.04, 1.00, 0.96), macro);
 
   return col;
 }
@@ -105,28 +110,24 @@ void main() {
   vec2 xz   = vWorldPos.xz;
   vec3 base = terrainColor(xz, vHeight, vSlope, vLo, vMid);
 
-  // Soft anime lighting — bright ambient, warm gentle sun, low contrast
-  vec3 sunDir  = normalize(vec3(0.51, 0.69, -0.51));
-  vec3 ambient = vec3(0.58, 0.62, 0.66);
-  vec3 sun     = vec3(1.02, 0.92, 0.72);
+  // Museum key light — warm directional, deeper shadows, cool fill
+  vec3 sunDir  = normalize(vec3(0.5, 0.78, 0.38));
+  vec3 ambient = vec3(0.30, 0.30, 0.33);
+  vec3 sun     = vec3(1.15, 1.02, 0.78);
 
   float diff = max(0.0, dot(vNormal, sunDir));
-  diff = smoothstep(0.0, 0.62, diff) * 0.7 + diff * 0.3; // soft toon falloff
+  diff = smoothstep(0.0, 0.5, diff) * 0.6 + diff * 0.4; // firmer, more sculpted falloff
 
-  // Hemisphere sky/ground bounce
-  float hemiT   = 0.5 + 0.5 * vNormal.y;
-  vec3  hemiCol = mix(vec3(0.28, 0.38, 0.18), vec3(0.55, 0.74, 0.92), hemiT) * 0.30;
+  // Cool fill from below-left to keep shadowed slopes readable
+  float fillT = max(0.0, dot(vNormal, normalize(vec3(-0.4, 0.2, -0.5))));
+  vec3  fill  = vec3(0.22, 0.27, 0.34) * fillT * 0.4;
 
-  float ao = 0.86 + 0.14 * (vNormal.y * 0.5 + 0.5);
+  float ao = 0.80 + 0.20 * (vNormal.y * 0.5 + 0.5);
 
-  // Drifting cloud shadows — large soft noise scrolling over the land
-  float cloud  = fn(xz * 0.0075 + vec2(uTime * 0.013, uTime * 0.008));
-  float shadow = mix(1.0, 0.80, smoothstep(0.52, 0.78, cloud));
+  vec3 lit = base * (ambient + sun * diff + fill) * ao;
 
-  vec3 lit = base * (ambient + sun * diff + hemiCol) * ao * shadow;
-
-  // Gentle filmic-ish roll-off keeps brights pastel instead of blown out
-  lit = lit / (lit + vec3(0.22)) * 1.22;
+  // Gentle filmic roll-off keeps highlights from blowing out
+  lit = lit / (lit + vec3(0.30)) * 1.30;
 
   gl_FragColor = vec4(lit, 1.0);
 }
