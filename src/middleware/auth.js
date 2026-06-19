@@ -23,6 +23,28 @@ const protect = async (req, res, next) => {
   }
 };
 
+// Optional auth: if a valid token is present, populate req.userId/req.userRole;
+// otherwise continue as an anonymous request. Never blocks. Use on endpoints
+// that are public but behave differently when the caller is known (e.g.
+// presence-gated forum reads).
+const attachUser = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.userId = decoded.id;
+      const user = await User.findById(decoded.id).select('role');
+      req.userRole = user?.role || 'member';
+    } catch {
+      // Invalid or expired token → fall through as anonymous.
+    }
+  }
+
+  next();
+};
+
 const requireRole = (...roles) => (req, res, next) => {
   if (!roles.includes(req.userRole)) {
     return res.status(403).json({ success: false, error: 'Insufficient permissions' });
@@ -30,4 +52,4 @@ const requireRole = (...roles) => (req, res, next) => {
   next();
 };
 
-module.exports = { protect, requireRole };
+module.exports = { protect, attachUser, requireRole };

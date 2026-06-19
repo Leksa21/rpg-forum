@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { get } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 import BgScene from '../components/layout/BgScene';
 import Topbar from '../components/layout/Topbar';
 import TravelPanel from '../components/travel/TravelPanel';
@@ -23,11 +24,13 @@ function timeAgo(date) {
 export default function AreaForum() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { token } = useAuth();
 
   const [location, setLocation] = useState(null);
   const [posts, setPosts]       = useState([]);
   const [total, setTotal]       = useState(0);
   const [page, setPage]         = useState(1);
+  const [restricted, setRestricted] = useState(false);
   const [loading, setLoading]   = useState(true);
   const [postsLoading, setPostsLoading] = useState(false);
   const [error, setError]       = useState('');
@@ -43,11 +46,15 @@ export default function AreaForum() {
   useEffect(() => {
     setPostsLoading(true);
     const params = new URLSearchParams({ location: id, page, limit: LIMIT });
-    get(`/api/posts?${params}`)
-      .then(r => { setPosts(r.data); setTotal(r.meta.total); })
+    get(`/api/posts?${params}`, token)
+      .then(r => {
+        setPosts(r.data);
+        setTotal(r.meta.total);
+        setRestricted(Boolean(r.restricted));
+      })
       .catch(() => {})
       .finally(() => setPostsLoading(false));
-  }, [id, page]);
+  }, [id, page, token]);
 
   if (loading) return (
     <>
@@ -94,83 +101,96 @@ export default function AreaForum() {
               isStartingLocation={location.isStartingLocation}
             />
 
-            <div className="af-posts-header">
-              <span className="af-posts-count">{total} {total === 1 ? 'post' : 'posts'}</span>
-              <button
-                className="af-write-btn"
-                style={{ '--accent': accent }}
-                onClick={() => navigate('/forum/new', { state: { locationId: id, locationName: location.name } })}
-              >
-                ✍ Write Here
-              </button>
-            </div>
-
-            {postsLoading
-              ? <p style={{ color: 'var(--text-muted)', padding: '2rem 0' }}>Loading posts…</p>
-              : posts.length === 0
-                ? (
-                  <div className="af-empty">
-                    <p>No tales have been told here yet.</p>
-                    <button
-                      className="btn-primary"
-                      style={{ width: 'auto', padding: '0.6rem 1.5rem', marginTop: '1rem' }}
-                      onClick={() => navigate('/forum/new', { state: { locationId: id, locationName: location.name } })}
-                    >
-                      Be the first to write
-                    </button>
-                  </div>
-                )
-                : <div className="af-post-list">
-                    {posts.map(p => {
-                      const classColor = CLASS_COLORS[p.character?.class] || 'var(--gold)';
-                      return (
-                        <div
-                          key={p._id}
-                          className="af-post-row"
-                          onClick={() => navigate(`/forum/${p._id}`)}
-                          role="link"
-                          tabIndex={0}
-                          onKeyDown={e => e.key === 'Enter' && navigate(`/forum/${p._id}`)}
-                        >
-                          <div className="af-post-avatar" style={{ background: `${classColor}22`, borderColor: classColor }}>
-                            {p.character?.avatar || '?'}
-                          </div>
-                          <div className="af-post-info">
-                            <div className="af-post-title">{p.isPinned && <span className="af-pin">📌 </span>}{p.title}</div>
-                            <div className="af-post-meta">
-                              {p.character?._id ? (
-                                <Link
-                                  to={`/character/${p.character._id}`}
-                                  className="af-char-link"
-                                  style={{ color: classColor }}
-                                  onClick={e => e.stopPropagation()}
-                                >
-                                  {p.character.name}
-                                </Link>
-                              ) : (
-                                <span style={{ color: classColor }}>{p.character?.name || p.author?.username}</span>
-                              )}
-                              <span className="af-dot">·</span>
-                              <span>{timeAgo(p.createdAt)}</span>
-                              <span className="af-dot">·</span>
-                              <span>{p.commentCount ?? 0} replies</span>
-                              <span className="af-dot">·</span>
-                              <span>{p.views} views</span>
-                            </div>
-                          </div>
-                          <div className="af-post-category">{p.category}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-            }
-
-            {totalPages > 1 && (
-              <div className="pm-pagination">
-                <button className="pm-page-btn" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>← Prev</button>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Page {page} / {totalPages}</span>
-                <button className="pm-page-btn" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next →</button>
+            {restricted ? (
+              <div className="af-empty af-locked">
+                <div className="af-locked-icon">🔒</div>
+                <p className="af-locked-title">You are not here.</p>
+                <p>
+                  Word of what passes in <strong>{location.name}</strong> only reaches those
+                  who stand within it. Travel here to read its forum and join what unfolds.
+                </p>
               </div>
+            ) : (
+              <>
+                <div className="af-posts-header">
+                  <span className="af-posts-count">{total} {total === 1 ? 'post' : 'posts'}</span>
+                  <button
+                    className="af-write-btn"
+                    style={{ '--accent': accent }}
+                    onClick={() => navigate('/forum/new', { state: { locationId: id, locationName: location.name } })}
+                  >
+                    ✍ Write Here
+                  </button>
+                </div>
+
+                {postsLoading
+                  ? <p style={{ color: 'var(--text-muted)', padding: '2rem 0' }}>Loading posts…</p>
+                  : posts.length === 0
+                    ? (
+                      <div className="af-empty">
+                        <p>No tales have been told here yet.</p>
+                        <button
+                          className="btn-primary"
+                          style={{ width: 'auto', padding: '0.6rem 1.5rem', marginTop: '1rem' }}
+                          onClick={() => navigate('/forum/new', { state: { locationId: id, locationName: location.name } })}
+                        >
+                          Be the first to write
+                        </button>
+                      </div>
+                    )
+                    : <div className="af-post-list">
+                        {posts.map(p => {
+                          const classColor = CLASS_COLORS[p.character?.class] || 'var(--gold)';
+                          return (
+                            <div
+                              key={p._id}
+                              className="af-post-row"
+                              onClick={() => navigate(`/forum/${p._id}`)}
+                              role="link"
+                              tabIndex={0}
+                              onKeyDown={e => e.key === 'Enter' && navigate(`/forum/${p._id}`)}
+                            >
+                              <div className="af-post-avatar" style={{ background: `${classColor}22`, borderColor: classColor }}>
+                                {p.character?.avatar || '?'}
+                              </div>
+                              <div className="af-post-info">
+                                <div className="af-post-title">{p.isPinned && <span className="af-pin">📌 </span>}{p.title}</div>
+                                <div className="af-post-meta">
+                                  {p.character?._id ? (
+                                    <Link
+                                      to={`/character/${p.character._id}`}
+                                      className="af-char-link"
+                                      style={{ color: classColor }}
+                                      onClick={e => e.stopPropagation()}
+                                    >
+                                      {p.character.name}
+                                    </Link>
+                                  ) : (
+                                    <span style={{ color: classColor }}>{p.character?.name || p.author?.username}</span>
+                                  )}
+                                  <span className="af-dot">·</span>
+                                  <span>{timeAgo(p.createdAt)}</span>
+                                  <span className="af-dot">·</span>
+                                  <span>{p.commentCount ?? 0} replies</span>
+                                  <span className="af-dot">·</span>
+                                  <span>{p.views} views</span>
+                                </div>
+                              </div>
+                              <div className="af-post-category">{p.category}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                }
+
+                {totalPages > 1 && (
+                  <div className="pm-pagination">
+                    <button className="pm-page-btn" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>← Prev</button>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Page {page} / {totalPages}</span>
+                    <button className="pm-page-btn" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next →</button>
+                  </div>
+                )}
+              </>
             )}
           </div>
 

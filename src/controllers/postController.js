@@ -1,5 +1,27 @@
 const Post = require('../models/Post');
 const Comment = require('../models/Comment');
+const Character = require('../models/Character');
+const Location = require('../models/Location');
+const { canViewCity, canPostInCity, isStaffRole } = require('../utils/visibility');
+
+// The city a character currently occupies for visibility purposes. A character
+// with no explicit currentLocation is treated as standing in the starting city.
+// Returns null for anonymous requests or characterless users.
+async function resolveCurrentCityId(userId) {
+  if (!userId) return null;
+
+  const character = await Character.findOne({
+    owner: userId,
+    isSetup: true,
+    isDead: false,
+  }).select('currentLocation');
+  if (!character) return null;
+
+  if (character.currentLocation) return character.currentLocation;
+
+  const start = await Location.findOne({ isStartingLocation: true }).select('_id');
+  return start?._id || null;
+}
 
 const getPosts = async (req, res) => {
   try {
@@ -8,6 +30,24 @@ const getPosts = async (req, res) => {
     if (category) filter.category = category;
     if (location) filter.location = location;
     const skip = (Number(page) - 1) * Number(limit);
+
+    // Area-forum reads (scoped to a city) are presence-gated. Staff skip the
+    // lookup entirely. A blocked request gets an empty, flagged result rather
+    // than an error so the client can show a "you are not here" state.
+    if (location) {
+      const currentCityId = isStaffRole(req.userRole)
+        ? null
+        : await resolveCurrentCityId(req.userId);
+
+      if (!canViewCity({ role: req.userRole, currentCityId, targetCityId: location })) {
+        return res.json({
+          success: true,
+          data: [],
+          meta: { total: 0, page: Number(page), limit: Number(limit) },
+          restricted: true,
+        });
+      }
+    }
 
     const [posts, total] = await Promise.all([
       Post.find(filter)
@@ -40,6 +80,15 @@ const getPost = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
 
+    // Presence gate: a location-bound thread is invisible (404, no leak) to
+    // anyone not currently in its city. OOC threads (no location) stay open.
+    if (post.location && !isStaffRole(req.userRole)) {
+      const currentCityId = await resolveCurrentCityId(req.userId);
+      if (!canViewCity({ role: req.userRole, currentCityId, targetCityId: post.location })) {
+        return res.status(404).json({ success: false, error: 'Post not found' });
+      }
+    }
+
     post.views += 1;
     await post.save();
 
@@ -57,10 +106,31 @@ const createPost = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Title, content, and category are required' });
     }
 
-    const Character = require('../models/Character');
     const character = await Character.findOne({ owner: req.userId, isSetup: true, isDead: false });
     if (!character) {
       return res.status(400).json({ success: false, error: 'You need an active character to post' });
+    }
+
+    // Resolve the owning city. A venue (subLocation) carries its city, so a
+    // thread opened inside a venue inherits it even if `location` was omitted.
+    let targetCityId = location || null;
+    if (!targetCityId && subLocation) {
+      const SubLocation = require('../models/SubLocation');
+      const venue = await SubLocation.findById(subLocation).select('city');
+      targetCityId = venue?.city || null;
+    }
+
+    // Presence gate: location-bound threads can only be opened in the city you
+    // are in (staff may open them anywhere, e.g. mod-seeded threads).
+    if (targetCityId) {
+      const currentCityId = character.currentLocation
+        || (await Location.findOne({ isStartingLocation: true }).select('_id'))?._id;
+      if (!canPostInCity({ role: req.userRole, currentCityId, targetCityId })) {
+        return res.status(403).json({
+          success: false,
+          error: 'You must be in this location to post here',
+        });
+      }
     }
 
     const post = await Post.create({
@@ -71,7 +141,7 @@ const createPost = async (req, res) => {
       author: req.userId,
       character: character._id,
       subLocation: subLocation || null,
-      location: location || null,
+      location: targetCityId,
     });
 
     const populated = await post.populate([
@@ -133,6 +203,15 @@ const deletePost = async (req, res) => {
 
 const getComments = async (req, res) => {
   try {
+    // Replies are only readable when their thread's city is visible to you.
+    const parent = await Post.findById(req.params.id).select('location');
+    if (parent && parent.location && !isStaffRole(req.userRole)) {
+      const currentCityId = await resolveCurrentCityId(req.userId);
+      if (!canViewCity({ role: req.userRole, currentCityId, targetCityId: parent.location })) {
+        return res.json({ success: true, data: [], restricted: true });
+      }
+    }
+
     const comments = await Comment.find({ post: req.params.id })
       .populate('character', 'name avatar class race level')
       .populate('author', 'username')
@@ -155,10 +234,21 @@ const createComment = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Content is required' });
     }
 
-    const Character = require('../models/Character');
     const character = await Character.findOne({ owner: req.userId, isSetup: true, isDead: false });
     if (!character) {
       return res.status(400).json({ success: false, error: 'You need an active character to comment' });
+    }
+
+    // Presence gate: you can only reply in a thread whose city you are in.
+    if (post.location && !isStaffRole(req.userRole)) {
+      const currentCityId = character.currentLocation
+        || (await Location.findOne({ isStartingLocation: true }).select('_id'))?._id;
+      if (!canPostInCity({ role: req.userRole, currentCityId, targetCityId: post.location })) {
+        return res.status(403).json({
+          success: false,
+          error: 'You must be in this location to reply here',
+        });
+      }
     }
 
     const comment = await Comment.create({

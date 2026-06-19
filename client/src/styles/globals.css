@@ -2750,6 +2750,30 @@ a.db-hero-name:hover {
   font-size: 1.05rem;
 }
 
+.af-locked {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+  border: 1px solid rgba(201, 168, 76, 0.18);
+  border-radius: 14px;
+  background: rgba(10, 10, 20, 0.35);
+}
+
+.af-locked-icon {
+  font-size: 2.4rem;
+  margin-bottom: 0.6rem;
+  opacity: 0.85;
+}
+
+.af-locked-title {
+  font-family: 'Cinzel', serif;
+  font-style: normal;
+  letter-spacing: 0.04em;
+  color: var(--gold, #c9a84c);
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
 .af-post-list { display: flex; flex-direction: column; gap: 0.5rem; }
 
 .af-post-row {
