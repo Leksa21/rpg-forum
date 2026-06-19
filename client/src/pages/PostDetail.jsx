@@ -27,8 +27,8 @@ export default function PostDetail() {
     let cancelled = false;
     setLoading(true);
     Promise.all([
-      get(`/api/posts/${id}`),
-      get(`/api/posts/${id}/comments`),
+      get(`/api/posts/${id}`, token),
+      get(`/api/posts/${id}/comments`, token),
     ])
       .then(([p, c]) => {
         if (cancelled) return;
@@ -38,7 +38,7 @@ export default function PostDetail() {
       .catch(err => { if (!cancelled) setError(err.message); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [id]);
+  }, [id, token]);
 
   const handleComment = async (e) => {
     e.preventDefault();
