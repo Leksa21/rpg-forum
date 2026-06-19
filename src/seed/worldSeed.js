@@ -6,6 +6,13 @@ const SubLocation = require('../models/SubLocation');
 const Character   = require('../models/Character');
 const Travel      = require('../models/Travel');
 const Post        = require('../models/Post');
+const Comment     = require('../models/Comment');
+const User        = require('../models/User');
+const bcrypt      = require('bcryptjs');
+
+// A fixed account that authors the example threads, so reseeding can find and
+// replace its content cleanly. Nobody is meant to log in as this NPC.
+const NPC_EMAIL = 'chronicler@aldermere.seed';
 
 // The Realm of Aldermere — one coherent high-fantasy kingdom.
 // All mapCoords are verified against the procedural terrain (seed 42) so every
@@ -20,7 +27,7 @@ const seed = async () => {
     // Old location ids are about to die — clear every dangling reference
     Travel.deleteMany({}),
     Character.updateMany({}, { currentLocation: null, discoveredLocations: [] }),
-    Post.updateMany({ location: { $ne: null } }, { location: null }),
+    Post.updateMany({ location: { $ne: null } }, { location: null, subLocation: null }),
   ]);
 
   const [
@@ -128,37 +135,55 @@ const seed = async () => {
     },
   ]);
 
-  await SubLocation.insertMany([
-    // Dawnhold — the capital gets the full set
-    { name: 'The Gilded Stag',     type: 'tavern',     city: dawnhold._id,    icon: '🍺', description: 'Where knights, merchants, and liars share the same long tables.', npcName: 'Maren', npcRole: 'Innkeeper' },
-    { name: 'The Crownforge',      type: 'blacksmith', city: dawnhold._id,    icon: '⚒️', description: 'Armorers to the royal guard. Waitlist measured in seasons.', npcName: 'Master Edran', npcRole: 'Royal Smith' },
-    { name: 'Cathedral of Dawn',   type: 'temple',     city: dawnhold._id,    icon: '✨', description: 'Sunrise services that fill the nave with golden light.', npcName: 'High Cleric Yvanne', npcRole: 'High Cleric' },
-    { name: 'The Grand Bazaar',    type: 'market',     city: dawnhold._id,    icon: '🛒', description: 'If it exists, someone here sells it. If it doesn\'t, someone claims to.' },
-    { name: 'The King\'s Arena',   type: 'arena',      city: dawnhold._id,    icon: '⚔️', description: 'Sanctioned duels before a roaring crowd.' },
+  // ── Dawnhold: a full venue tree (City → District → Venue → sub-venue) ──
+  // This is the showcase of the nesting model. Districts are containers; the
+  // named venues live inside them; The Snug nests one level deeper still.
+  const [highQuarter, marketQuarter, lowerQuarter] = await SubLocation.insertMany([
+    { name: 'The High Quarter',   type: 'district', city: dawnhold._id, icon: '🏛️', order: 0, description: 'Temples, the arena, and the long shadow of the palace.' },
+    { name: 'The Market Quarter', type: 'district', city: dawnhold._id, icon: '🛒', order: 1, description: 'Coin changes hands from first light to last.', allowPlayerThreads: true },
+    { name: 'The Lower Quarter',  type: 'district', city: dawnhold._id, icon: '🍺', order: 2, description: 'Taverns, songs, and softer laws after dark.', allowPlayerThreads: true },
+  ]);
 
+  const [gildedStag, , cathedral, grandBazaar] = await SubLocation.insertMany([
+    { name: 'The Gilded Stag',   type: 'tavern',     city: dawnhold._id, parent: lowerQuarter._id,  icon: '🍺', allowPlayerThreads: true, description: 'Where knights, merchants, and liars share the same long tables.', npcName: 'Maren', npcRole: 'Innkeeper' },
+    { name: 'The Crownforge',    type: 'blacksmith', city: dawnhold._id, parent: marketQuarter._id, icon: '⚒️', description: 'Armorers to the royal guard. Waitlist measured in seasons.', npcName: 'Master Edran', npcRole: 'Royal Smith' },
+    { name: 'Cathedral of Dawn', type: 'temple',     city: dawnhold._id, parent: highQuarter._id,   icon: '✨', description: 'Sunrise services that fill the nave with golden light.', npcName: 'High Cleric Yvanne', npcRole: 'High Cleric' },
+    { name: 'The Grand Bazaar',  type: 'market',     city: dawnhold._id, parent: marketQuarter._id, icon: '🛒', allowPlayerThreads: true, description: 'If it exists, someone here sells it. If it doesn\'t, someone claims to.' },
+    { name: "The King's Arena",  type: 'arena',      city: dawnhold._id, parent: highQuarter._id,   icon: '⚔️', description: 'Sanctioned duels before a roaring crowd.' },
+  ]);
+
+  // Deep nesting demo: a back room *inside* the tavern.
+  await SubLocation.create({
+    name: 'The Snug', type: 'residence', city: dawnhold._id, parent: gildedStag._id, icon: '🛏️',
+    allowPlayerThreads: true, description: 'A curtained back room of rented cots and low, careful conversation.',
+  });
+
+  // ── Other cities: flat venues. Social spots (taverns, markets) let players
+  //    open threads; official places (temples, forges, docks) stay staff-only. ──
+  await SubLocation.insertMany([
     // Millbrook
-    { name: 'The Wheatsheaf',      type: 'tavern',     city: millbrook._id,   icon: '🍻', description: 'Cider, stew, and the realm\'s best gossip per copper.', npcName: 'Old Tobb', npcRole: 'Innkeeper' },
+    { name: 'The Wheatsheaf',      type: 'tavern',     city: millbrook._id,   icon: '🍻', allowPlayerThreads: true, description: 'Cider, stew, and the realm\'s best gossip per copper.', npcName: 'Old Tobb', npcRole: 'Innkeeper' },
     { name: 'Millers\' Guildhall', type: 'market',     city: millbrook._id,   icon: '🌾', description: 'Grain contracts and quiet influence.' },
 
     // Saltmere
-    { name: 'The Drowned Anchor',  type: 'tavern',     city: saltmere._id,    icon: '⚓', description: 'Sailors\' songs until dawn; knife-fights settled outside, mostly.', npcName: 'Cora Tide', npcRole: 'Owner' },
+    { name: 'The Drowned Anchor',  type: 'tavern',     city: saltmere._id,    icon: '⚓', allowPlayerThreads: true, description: 'Sailors\' songs until dawn; knife-fights settled outside, mostly.', npcName: 'Cora Tide', npcRole: 'Owner' },
     { name: 'Saltmere Docks',      type: 'docks',      city: saltmere._id,    icon: '🚢', description: 'A forest of masts from every nation that floats.' },
-    { name: 'League Countinghouse',type: 'market',     city: saltmere._id,    icon: '💰', description: 'Where the Harbor League sets prices and settles debts.', npcName: 'Factor Wells', npcRole: 'Factor' },
+    { name: 'League Countinghouse',type: 'market',     city: saltmere._id,    icon: '💰', allowPlayerThreads: true, description: 'Where the Harbor League sets prices and settles debts.', npcName: 'Factor Wells', npcRole: 'Factor' },
 
     // Sylvanthel
-    { name: 'Hall of Boughs',      type: 'tavern',     city: sylvanthel._id,  icon: '🌿', description: 'Moonwine served in cups grown for the occasion.', npcName: 'Ilyathe', npcRole: 'Host' },
+    { name: 'Hall of Boughs',      type: 'tavern',     city: sylvanthel._id,  icon: '🌿', allowPlayerThreads: true, description: 'Moonwine served in cups grown for the occasion.', npcName: 'Ilyathe', npcRole: 'Host' },
     { name: 'The Living Library',  type: 'library',    city: sylvanthel._id,  icon: '📚', description: 'Histories whispered to trees, recited back on request.', npcName: 'Lorekeeper Vael', npcRole: 'Lorekeeper' },
     { name: 'Shrine of the Pact',  type: 'temple',     city: sylvanthel._id,  icon: '🌳', description: 'Where the First Pact is renewed each midsummer.' },
 
     // Thornwatch
-    { name: 'The Last Hearth',     type: 'tavern',     city: thornwatch._id,  icon: '🔥', description: 'Hot food, spare arrows, and free advice: turn back.', npcName: 'Warden Hesk', npcRole: 'Warden-Captain' },
+    { name: 'The Last Hearth',     type: 'tavern',     city: thornwatch._id,  icon: '🔥', allowPlayerThreads: true, description: 'Hot food, spare arrows, and free advice: turn back.', npcName: 'Warden Hesk', npcRole: 'Warden-Captain' },
 
     // Greymoor Keep
-    { name: 'The Windbreak',       type: 'tavern',     city: greymoorKeep._id,icon: '🍺', description: 'Thick walls, thin ale, warm enough.', npcName: 'Serjeant Brann', npcRole: 'Quartermaster' },
+    { name: 'The Windbreak',       type: 'tavern',     city: greymoorKeep._id,icon: '🍺', allowPlayerThreads: true, description: 'Thick walls, thin ale, warm enough.', npcName: 'Serjeant Brann', npcRole: 'Quartermaster' },
     { name: 'Garrison Armory',     type: 'blacksmith', city: greymoorKeep._id,icon: '🛡️', description: 'Function over form, moor-tested.' },
 
     // Karag-Dur
-    { name: 'The Anvil\'s Rest',   type: 'tavern',     city: karagdur._id,    icon: '🍻', description: 'Stone mugs, black stout, songs about grudges.', npcName: 'Dvalin', npcRole: 'Barkeep' },
+    { name: 'The Anvil\'s Rest',   type: 'tavern',     city: karagdur._id,    icon: '🍻', allowPlayerThreads: true, description: 'Stone mugs, black stout, songs about grudges.', npcName: 'Dvalin', npcRole: 'Barkeep' },
     { name: 'The Grand Forge',     type: 'blacksmith', city: karagdur._id,    icon: '⚙️', description: 'Heirloom-grade steel; payment in ore or favors.', npcName: 'Forgemistress Hild', npcRole: 'Forgemistress' },
     { name: 'The Deep Doors',      type: 'dungeon',    city: karagdur._id,    icon: '🚪', description: 'Seven sealed doors. The dwarves do not discuss them.' },
 
@@ -166,11 +191,11 @@ const seed = async () => {
     { name: 'Hall of Echoes',      type: 'temple',     city: skyreach._id,    icon: '🕊️', description: 'Ask one question. Receive one true answer.', npcName: 'Abbot Serel', npcRole: 'Abbot' },
 
     // Fenmoor
-    { name: 'The Green Lantern',   type: 'tavern',     city: fenmoor._id,     icon: '🏮', description: 'Eel pie and rumors that turn out true unsettlingly often.', npcName: 'Mama Sedge', npcRole: 'Brewer' },
+    { name: 'The Green Lantern',   type: 'tavern',     city: fenmoor._id,     icon: '🏮', allowPlayerThreads: true, description: 'Eel pie and rumors that turn out true unsettlingly often.', npcName: 'Mama Sedge', npcRole: 'Brewer' },
     { name: 'Fen Market',          type: 'market',     city: fenmoor._id,     icon: '🧿', description: 'Charms, remedies, and things in jars that watch you back.' },
 
     // Gullhaven
-    { name: 'The Salt Oar',        type: 'tavern',     city: gullhaven._id,   icon: '🐟', description: 'Chowder, grog, and the loudest weather arguments in the realm.', npcName: 'Skipper Unna', npcRole: 'Innkeeper' },
+    { name: 'The Salt Oar',        type: 'tavern',     city: gullhaven._id,   icon: '🐟', allowPlayerThreads: true, description: 'Chowder, grog, and the loudest weather arguments in the realm.', npcName: 'Skipper Unna', npcRole: 'Innkeeper' },
 
     // The Sunken Crown
     { name: 'Tidewalker Camp',     type: 'docks',      city: sunkenCrown._id, icon: '⛺', description: 'Treasure-divers\' staging ground. Empty bedrolls outnumber full ones.' },
@@ -179,7 +204,66 @@ const seed = async () => {
     { name: 'The Warding Stones',  type: 'temple',     city: barrowfields._id,icon: '🗿', description: 'A ring of carved stones that keeps the mounds quiet. Mind the gaps.' },
   ]);
 
-  console.log('The Realm of Aldermere seeded: 9 regions, 12 locations.');
+  // ── Example threads, authored by a seed NPC ("The Chronicler") ──
+  // Replace any prior seed NPC and its content so reseeding stays idempotent.
+  const prior = await User.findOne({ email: NPC_EMAIL });
+  if (prior) {
+    const priorPosts = await Post.find({ author: prior._id }).select('_id');
+    await Comment.deleteMany({ post: { $in: priorPosts.map(p => p._id) } });
+    await Post.deleteMany({ author: prior._id });
+    await Character.deleteMany({ owner: prior._id });
+    await User.deleteOne({ _id: prior._id });
+  }
+
+  const npcUser = await User.create({
+    username: 'TheChronicler',
+    email: NPC_EMAIL,
+    password: await bcrypt.hash(`seed-${Date.now()}`, 10),
+    role: 'moderator',
+    bio: 'Keeper of the realm\'s notices and tales.',
+  });
+  const npc = await Character.create({
+    owner: npcUser._id, name: 'The Chronicler', class: 'Bard', race: 'Human',
+    avatar: '📜', tagline: 'Recorder of the realm', level: 1, isSetup: true,
+    currentLocation: dawnhold._id,
+  });
+
+  const saltmereTavern = await SubLocation.findOne({ city: saltmere._id, name: 'The Drowned Anchor' }).select('_id');
+
+  const seededThreads = [
+    {
+      title: 'Notice: Rooms to Let at the Stag',
+      content: 'Maren keeps three cots in The Snug, clean straw changed weekly. A copper a night, two for the corner with the shutter. Pay up front; the Stag has seen enough morning-flits to last a lifetime.',
+      category: 'General', location: dawnhold._id, subLocation: gildedStag._id,
+    },
+    {
+      title: 'Caravan Day — Wares from the Storm Coast',
+      content: 'The eastern caravans reach the Bazaar by week\'s end: Saltmere silk, Karag steel, and spices the names of which the criers cannot pronounce. Bring coin and a sharp eye for the short-weighing stalls.',
+      category: 'Trading', location: dawnhold._id, subLocation: grandBazaar._id,
+    },
+    {
+      title: 'Dawn Service — All Are Welcome',
+      content: 'High Cleric Yvanne calls the faithful and the merely curious to the sunrise rite. The eastern windows turn the nave to gold; those who have lost someone to the road are remembered by name.',
+      category: 'Announcements', location: dawnhold._id, subLocation: cathedral._id,
+    },
+    {
+      title: 'Tide-Tales and Tall Lies',
+      content: 'Cora Tide pours for any who can hold their grog and their tongue. Tonight\'s wager: who first saw the lights beneath the Sunken Crown. Three sailors swear three different years, and all three are lying.',
+      category: 'General', location: saltmere._id, subLocation: saltmereTavern?._id || null,
+    },
+  ];
+
+  const createdThreads = await Post.insertMany(
+    seededThreads.map(t => ({ ...t, author: npcUser._id, character: npc._id }))
+  );
+
+  // One reply, to show threads carry conversation.
+  await Comment.create({
+    content: 'Took the corner cot last winter. Worth the extra copper — the shutter keeps the worst of the wind, and Maren\'s breakfast is honest.',
+    author: npcUser._id, character: npc._id, post: createdThreads[0]._id,
+  });
+
+  console.log(`The Realm of Aldermere seeded: 9 regions, 12 locations, nested venues, ${createdThreads.length} example threads.`);
   process.exit(0);
 };
 
