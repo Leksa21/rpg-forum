@@ -3,43 +3,34 @@ const Comment = require('../models/Comment');
 const Character = require('../models/Character');
 const Location = require('../models/Location');
 const { canViewCity, canPostInCity, isStaffRole } = require('../utils/visibility');
-
-// The city a character currently occupies for visibility purposes. A character
-// with no explicit currentLocation is treated as standing in the starting city.
-// Returns null for anonymous requests or characterless users.
-async function resolveCurrentCityId(userId) {
-  if (!userId) return null;
-
-  const character = await Character.findOne({
-    owner: userId,
-    isSetup: true,
-    isDead: false,
-  }).select('currentLocation');
-  if (!character) return null;
-
-  if (character.currentLocation) return character.currentLocation;
-
-  const start = await Location.findOne({ isStartingLocation: true }).select('_id');
-  return start?._id || null;
-}
+const { resolveCurrentCityId } = require('../utils/presence');
+const SubLocation = require('../models/SubLocation');
 
 const getPosts = async (req, res) => {
   try {
-    const { category, location, page = 1, limit = 20 } = req.query;
+    const { category, location, subLocation, page = 1, limit = 20 } = req.query;
     const filter = {};
     if (category) filter.category = category;
     if (location) filter.location = location;
+    if (subLocation) filter.subLocation = subLocation;
     const skip = (Number(page) - 1) * Number(limit);
 
-    // Area-forum reads (scoped to a city) are presence-gated. Staff skip the
-    // lookup entirely. A blocked request gets an empty, flagged result rather
+    // Area-forum reads (scoped to a city or a venue within it) are presence-
+    // gated. A venue inherits its city, so resolve the owning city first. Staff
+    // skip the lookup. A blocked request gets an empty, flagged result rather
     // than an error so the client can show a "you are not here" state.
-    if (location) {
+    let targetCityId = location || null;
+    if (!targetCityId && subLocation) {
+      const venue = await SubLocation.findById(subLocation).select('city');
+      targetCityId = venue?.city || null;
+    }
+
+    if (targetCityId) {
       const currentCityId = isStaffRole(req.userRole)
         ? null
         : await resolveCurrentCityId(req.userId);
 
-      if (!canViewCity({ role: req.userRole, currentCityId, targetCityId: location })) {
+      if (!canViewCity({ role: req.userRole, currentCityId, targetCityId })) {
         return res.json({
           success: true,
           data: [],
@@ -115,7 +106,6 @@ const createPost = async (req, res) => {
     // thread opened inside a venue inherits it even if `location` was omitted.
     let targetCityId = location || null;
     if (!targetCityId && subLocation) {
-      const SubLocation = require('../models/SubLocation');
       const venue = await SubLocation.findById(subLocation).select('city');
       targetCityId = venue?.city || null;
     }

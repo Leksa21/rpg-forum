@@ -16,6 +16,7 @@ import QuestBoard        from './pages/QuestBoard';
 import AdminPanel        from './pages/AdminPanel';
 import WorldAreas        from './pages/WorldAreas';
 import AreaForum         from './pages/AreaForum';
+import VenueForum        from './pages/VenueForum';
 import Combat            from './pages/Combat';
 import LoadingScreen     from './components/layout/LoadingScreen';
 
@@ -86,6 +87,7 @@ export default function App() {
           <Route path="/admin"             element={<DashboardRoute><AdminPanel /></DashboardRoute>} />
           <Route path="/world/areas"       element={<DashboardRoute><WorldAreas /></DashboardRoute>} />
           <Route path="/world/areas/:id"   element={<DashboardRoute><AreaForum /></DashboardRoute>} />
+          <Route path="/world/areas/:cityId/venue/:venueId" element={<DashboardRoute><VenueForum /></DashboardRoute>} />
           <Route path="/combat/:id"        element={<DashboardRoute><Combat /></DashboardRoute>} />
         </Routes>
       </BrowserRouter>

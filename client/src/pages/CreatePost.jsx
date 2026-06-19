@@ -11,8 +11,14 @@ export default function CreatePost() {
   const { token, character } = useAuth();
   const navigate = useNavigate();
   const navState = useLocation().state || {};
-  const locationId   = navState.locationId   || null;
-  const locationName = navState.locationName || null;
+  const locationId    = navState.locationId    || null;
+  const locationName  = navState.locationName  || null;
+  const cityId        = navState.cityId        || locationId;
+  const subLocationId = navState.subLocationId || null;
+  const placeName     = navState.subLocationName || locationName;
+  const backTo = subLocationId
+    ? `/world/areas/${cityId}/venue/${subLocationId}`
+    : locationId ? `/world/areas/${locationId}` : null;
 
   const [title, setTitle]       = useState('');
   const [category, setCategory] = useState('General');
@@ -35,7 +41,8 @@ export default function CreatePost() {
     setSubmitting(true);
     try {
       const body = { title: title.trim(), content: content.trim(), category, tags: tagList };
-      if (locationId) body.location = locationId;
+      if (subLocationId) body.subLocation = subLocationId;
+      else if (locationId) body.location = locationId;
       const res = await post('/api/posts', body, token);
       navigate(`/forum/${res.data._id}`);
     } catch (err) {
@@ -51,17 +58,17 @@ export default function CreatePost() {
         <Topbar />
         <main className="dash-main">
 
-          {locationId
-            ? <button className="post-back-link" onClick={() => navigate(`/world/areas/${locationId}`)}>← Back to {locationName}</button>
+          {backTo
+            ? <button className="post-back-link" onClick={() => navigate(backTo)}>← Back to {placeName}</button>
             : <Link to="/forum" className="post-back-link">← Back to Forum</Link>
           }
 
           <div className="create-post-wrap">
             <header className="create-post-header">
               <h1 className="forum-title">New Post</h1>
-              {locationName && (
+              {placeName && (
                 <div className="create-post-location">
-                  📍 Writing in <span className="create-post-location-name">{locationName}</span>
+                  📍 Writing in <span className="create-post-location-name">{placeName}</span>
                 </div>
               )}
               {character && (

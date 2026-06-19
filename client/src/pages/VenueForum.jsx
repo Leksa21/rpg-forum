@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { get } from '../lib/api';
+import { toId } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
 import BgScene from '../components/layout/BgScene';
 import Topbar from '../components/layout/Topbar';
-import TravelPanel from '../components/travel/TravelPanel';
 
 const CLASS_COLORS = {
   Warrior: '#e74c3c', Mage: '#3498db', Rogue: '#f39c12',
@@ -21,12 +21,12 @@ function timeAgo(date) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-export default function AreaForum() {
-  const { id } = useParams();
+export default function VenueForum() {
+  const { cityId, venueId } = useParams();
   const navigate = useNavigate();
   const { token } = useAuth();
 
-  const [location, setLocation] = useState(null);
+  const [city, setCity]         = useState(null);
   const [venues, setVenues]     = useState([]);
   const [posts, setPosts]       = useState([]);
   const [total, setTotal]       = useState(0);
@@ -34,34 +34,30 @@ export default function AreaForum() {
   const [restricted, setRestricted] = useState(false);
   const [loading, setLoading]   = useState(true);
   const [postsLoading, setPostsLoading] = useState(false);
-  const [error, setError]       = useState('');
   const LIMIT = 15;
 
   useEffect(() => {
-    get(`/api/world/locations/${id}`)
-      .then(r => setLocation(r.data))
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [id]);
+    setLoading(true);
+    Promise.all([
+      get(`/api/world/locations/${cityId}`).then(r => setCity(r.data)).catch(() => {}),
+      get(`/api/world/locations/${cityId}/venues`, token)
+        .then(r => { setVenues(r.data || []); if (r.restricted) setRestricted(true); })
+        .catch(() => {}),
+    ]).finally(() => setLoading(false));
+  }, [cityId, token]);
 
   useEffect(() => {
     setPostsLoading(true);
-    const params = new URLSearchParams({ location: id, page, limit: LIMIT });
+    const params = new URLSearchParams({ subLocation: venueId, page, limit: LIMIT });
     get(`/api/posts?${params}`, token)
       .then(r => {
         setPosts(r.data);
         setTotal(r.meta.total);
-        setRestricted(Boolean(r.restricted));
+        if (r.restricted) setRestricted(true);
       })
       .catch(() => {})
       .finally(() => setPostsLoading(false));
-  }, [id, page, token]);
-
-  useEffect(() => {
-    get(`/api/world/locations/${id}/venues`, token)
-      .then(r => setVenues(r.data || []))
-      .catch(() => {});
-  }, [id, token]);
+  }, [venueId, page, token]);
 
   if (loading) return (
     <>
@@ -70,20 +66,22 @@ export default function AreaForum() {
     </>
   );
 
-  if (error || !location) return (
+  const venue = venues.find(v => toId(v._id) === venueId);
+
+  if (!venue && !restricted) return (
     <>
       <BgScene />
       <div className="dashboard"><Topbar /><main className="dash-main">
-        <p style={{ color: 'var(--text-muted)' }}>{error || 'Location not found.'}</p>
-        <button onClick={() => navigate('/world/areas')} className="btn-secondary" style={{ width: 'auto', marginTop: '1rem', padding: '0.5rem 1.2rem' }}>← Back to Areas</button>
+        <p style={{ color: 'var(--text-muted)' }}>This place could not be found.</p>
+        <button onClick={() => navigate(`/world/areas/${cityId}`)} className="btn-secondary" style={{ width: 'auto', marginTop: '1rem', padding: '0.5rem 1.2rem' }}>← Back</button>
       </main></div>
     </>
   );
 
-  const gradient = location.theme?.gradient || 'linear-gradient(160deg, #0a0a14 0%, #141428 100%)';
-  const accent   = location.theme?.accentColor || '#c9a84c';
+  const gradient = city?.theme?.gradient || 'linear-gradient(160deg, #0a0a14 0%, #141428 100%)';
+  const accent   = city?.theme?.accentColor || '#c9a84c';
   const totalPages = Math.ceil(total / LIMIT);
-  const topVenues = venues.filter(v => !v.parent);
+  const children = venues.filter(v => toId(v.parent) === venueId);
 
   return (
     <>
@@ -94,59 +92,63 @@ export default function AreaForum() {
 
           <div className="af-banner" style={{ background: gradient }}>
             <div className="af-banner-inner">
-              <button className="af-back-btn" onClick={() => navigate('/world/areas')}>← Areas</button>
-              <div className="af-banner-icon">{location.icon}</div>
-              <h1 className="af-banner-title" style={{ color: accent }}>{location.name}</h1>
-              <p className="af-banner-region">{location.region?.name}</p>
-              {location.lore && <p className="af-banner-lore">{location.lore}</p>}
+              <button className="af-back-btn" onClick={() => navigate(`/world/areas/${cityId}`)}>← {city?.name || 'City'}</button>
+              <div className="af-banner-icon">{venue?.icon || '🏠'}</div>
+              <h1 className="af-banner-title" style={{ color: accent }}>{venue?.name || 'Restricted'}</h1>
+              <p className="af-banner-region">{city?.name}</p>
+              {venue?.lore && <p className="af-banner-lore">{venue.lore}</p>}
+              {!venue?.lore && venue?.description && <p className="af-banner-lore">{venue.description}</p>}
             </div>
           </div>
 
           <div className="af-body">
-            <TravelPanel
-              locationId={id}
-              dangerLevel={location.dangerLevel}
-              isStartingLocation={location.isStartingLocation}
-            />
 
             {restricted ? (
               <div className="af-empty af-locked">
                 <div className="af-locked-icon">🔒</div>
                 <p className="af-locked-title">You are not here.</p>
                 <p>
-                  Word of what passes in <strong>{location.name}</strong> only reaches those
+                  Word of what passes in <strong>{city?.name}</strong> only reaches those
                   who stand within it. Travel here to read its forum and join what unfolds.
                 </p>
               </div>
-            ) : topVenues.length > 0 ? (
-              <div className="af-venue-grid">
-                {topVenues.map(v => (
-                  <button
-                    key={v._id}
-                    className="af-venue-card"
-                    onClick={() => navigate(`/world/areas/${id}/venue/${v._id}`)}
-                  >
-                    <span className="af-venue-icon">{v.icon}</span>
-                    <span className="af-venue-name">{v.name}</span>
-                    {v.description && <span className="af-venue-desc">{v.description}</span>}
-                  </button>
-                ))}
-              </div>
             ) : (
               <>
+                {children.length > 0 && (
+                  <div className="af-venue-grid">
+                    {children.map(c => (
+                      <button
+                        key={c._id}
+                        className="af-venue-card"
+                        onClick={() => navigate(`/world/areas/${cityId}/venue/${c._id}`)}
+                      >
+                        <span className="af-venue-icon">{c.icon}</span>
+                        <span className="af-venue-name">{c.name}</span>
+                        {c.description && <span className="af-venue-desc">{c.description}</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <div className="af-posts-header">
-                  <span className="af-posts-count">{total} {total === 1 ? 'post' : 'posts'}</span>
+                  <span className="af-posts-count">{total} {total === 1 ? 'thread' : 'threads'}</span>
                   <button
                     className="af-write-btn"
                     style={{ '--accent': accent }}
-                    onClick={() => navigate('/forum/new', { state: { locationId: id, locationName: location.name } })}
+                    onClick={() => navigate('/forum/new', { state: {
+                      cityId,
+                      locationId: cityId,
+                      locationName: city?.name,
+                      subLocationId: venueId,
+                      subLocationName: venue?.name,
+                    } })}
                   >
                     ✍ Write Here
                   </button>
                 </div>
 
                 {postsLoading
-                  ? <p style={{ color: 'var(--text-muted)', padding: '2rem 0' }}>Loading posts…</p>
+                  ? <p style={{ color: 'var(--text-muted)', padding: '2rem 0' }}>Loading threads…</p>
                   : posts.length === 0
                     ? (
                       <div className="af-empty">
@@ -154,7 +156,13 @@ export default function AreaForum() {
                         <button
                           className="btn-primary"
                           style={{ width: 'auto', padding: '0.6rem 1.5rem', marginTop: '1rem' }}
-                          onClick={() => navigate('/forum/new', { state: { locationId: id, locationName: location.name } })}
+                          onClick={() => navigate('/forum/new', { state: {
+                            cityId,
+                            locationId: cityId,
+                            locationName: city?.name,
+                            subLocationId: venueId,
+                            subLocationName: venue?.name,
+                          } })}
                         >
                           Be the first to write
                         </button>
@@ -214,6 +222,7 @@ export default function AreaForum() {
                 )}
               </>
             )}
+
           </div>
 
         </main>
