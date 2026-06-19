@@ -31,8 +31,22 @@ function canViewCity({ role, currentCityId, targetCityId }) {
   return String(currentCityId) === String(targetCityId);
 }
 
-// Writing (opening a thread / replying) follows the same rule as reading:
+// Writing (replying to an existing thread) follows the same rule as reading:
 // you must be present in the city, or be staff.
 const canPostInCity = canViewCity;
 
-module.exports = { STAFF_ROLES, isStaffRole, canViewCity, canPostInCity };
+/**
+ * Can the requester OPEN a new thread in a venue/city? By default only staff
+ * may; a place can opt players in via `allowPlayerThreads`. Players still need
+ * to be present. (Replying to existing threads is governed by canPostInCity.)
+ *
+ * @param {{ role?: string, currentCityId?: unknown, targetCityId?: unknown, allowPlayerThreads?: boolean }} args
+ * @returns {boolean}
+ */
+function canOpenThread({ role, currentCityId, targetCityId, allowPlayerThreads }) {
+  if (isStaffRole(role)) return true;
+  if (!canViewCity({ role, currentCityId, targetCityId })) return false;
+  return Boolean(allowPlayerThreads);
+}
+
+module.exports = { STAFF_ROLES, isStaffRole, canViewCity, canPostInCity, canOpenThread };

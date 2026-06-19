@@ -24,7 +24,7 @@ function timeAgo(date) {
 export default function AreaForum() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
 
   const [location, setLocation] = useState(null);
   const [venues, setVenues]     = useState([]);
@@ -84,6 +84,8 @@ export default function AreaForum() {
   const accent   = location.theme?.accentColor || '#c9a84c';
   const totalPages = Math.ceil(total / LIMIT);
   const topVenues = venues.filter(v => !v.parent);
+  const isStaff = ['moderator', 'admin', 'head_admin'].includes(user?.role);
+  const canWrite = isStaff || Boolean(location.allowPlayerThreads);
 
   return (
     <>
@@ -136,13 +138,15 @@ export default function AreaForum() {
               <>
                 <div className="af-posts-header">
                   <span className="af-posts-count">{total} {total === 1 ? 'post' : 'posts'}</span>
-                  <button
-                    className="af-write-btn"
-                    style={{ '--accent': accent }}
-                    onClick={() => navigate('/forum/new', { state: { locationId: id, locationName: location.name } })}
-                  >
-                    ✍ Write Here
-                  </button>
+                  {canWrite && (
+                    <button
+                      className="af-write-btn"
+                      style={{ '--accent': accent }}
+                      onClick={() => navigate('/forum/new', { state: { locationId: id, locationName: location.name } })}
+                    >
+                      ✍ Write Here
+                    </button>
+                  )}
                 </div>
 
                 {postsLoading
@@ -151,13 +155,16 @@ export default function AreaForum() {
                     ? (
                       <div className="af-empty">
                         <p>No tales have been told here yet.</p>
-                        <button
-                          className="btn-primary"
-                          style={{ width: 'auto', padding: '0.6rem 1.5rem', marginTop: '1rem' }}
-                          onClick={() => navigate('/forum/new', { state: { locationId: id, locationName: location.name } })}
-                        >
-                          Be the first to write
-                        </button>
+                        {canWrite
+                          ? <button
+                              className="btn-primary"
+                              style={{ width: 'auto', padding: '0.6rem 1.5rem', marginTop: '1rem' }}
+                              onClick={() => navigate('/forum/new', { state: { locationId: id, locationName: location.name } })}
+                            >
+                              Be the first to write
+                            </button>
+                          : <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>Only the keepers of this place may open new threads here.</p>
+                        }
                       </div>
                     )
                     : <div className="af-post-list">

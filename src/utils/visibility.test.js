@@ -1,4 +1,4 @@
-const { isStaffRole, canViewCity, canPostInCity } = require('./visibility');
+const { isStaffRole, canViewCity, canPostInCity, canOpenThread } = require('./visibility');
 
 describe('isStaffRole()', () => {
   test('recognizes moderator, admin and head_admin as staff', () => {
@@ -56,6 +56,32 @@ describe('canPostInCity()', () => {
     ).toBe(true);
     expect(
       canPostInCity({ role: 'member', currentCityId: 'roko', targetCityId: 'maki' })
+    ).toBe(false);
+  });
+});
+
+describe('canOpenThread()', () => {
+  test('staff can always open threads', () => {
+    expect(
+      canOpenThread({ role: 'moderator', currentCityId: null, targetCityId: 'roko', allowPlayerThreads: false })
+    ).toBe(true);
+  });
+
+  test('a present player cannot open a thread where it is not allowed', () => {
+    expect(
+      canOpenThread({ role: 'member', currentCityId: 'roko', targetCityId: 'roko', allowPlayerThreads: false })
+    ).toBe(false);
+  });
+
+  test('a present player can open a thread where the venue allows it', () => {
+    expect(
+      canOpenThread({ role: 'member', currentCityId: 'roko', targetCityId: 'roko', allowPlayerThreads: true })
+    ).toBe(true);
+  });
+
+  test('an absent player cannot open a thread even where allowed', () => {
+    expect(
+      canOpenThread({ role: 'member', currentCityId: 'maki', targetCityId: 'roko', allowPlayerThreads: true })
     ).toBe(false);
   });
 });

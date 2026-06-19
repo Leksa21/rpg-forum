@@ -25,6 +25,9 @@ const subLocationSchema = new mongoose.Schema(
     image: { type: String, default: null },
     icon: { type: String, default: '🏠' },
     order: { type: Number, default: 0 },
+    // When false (default), only staff may open threads here; players reply only.
+    // When true, present players may also open new threads (the "button" case).
+    allowPlayerThreads: { type: Boolean, default: false },
     isAccessible: { type: Boolean, default: true },
     npcName: { type: String, default: null },
     npcRole: { type: String, default: null },

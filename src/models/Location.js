@@ -24,6 +24,9 @@ const locationSchema = new mongoose.Schema(
     faction: { type: String, default: 'Neutral' },
     icon: { type: String, default: '🏘️' },
     isStartingLocation: { type: Boolean, default: false },
+    // When false (default), only staff may open city-level threads; players reply
+    // only. When true, present players may also open threads directly in the city.
+    allowPlayerThreads: { type: Boolean, default: false },
     population: { type: Number, default: 0 },
     theme: {
       gradient:    { type: String, default: 'linear-gradient(160deg, #0a0a14 0%, #141428 100%)' },

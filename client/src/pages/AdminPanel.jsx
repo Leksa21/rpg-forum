@@ -306,7 +306,7 @@ function LocationManager({ token }) {
   const [regions, setRegions]     = useState([]);
   const [loading, setLoading]     = useState(true);
   const [showForm, setShowForm]   = useState(false);
-  const [form, setForm] = useState({ name: '', type: 'town', region: '', description: '', dangerLevel: 'safe', icon: '🏘️', x: 50, y: 50 });
+  const [form, setForm] = useState({ name: '', type: 'town', region: '', description: '', dangerLevel: 'safe', icon: '🏘️', x: 50, y: 50, allowPlayerThreads: false });
   const [msg, setMsg] = useState('');
 
   useEffect(() => {
@@ -327,6 +327,7 @@ function LocationManager({ token }) {
         name: form.name, type: form.type, region: form.region,
         description: form.description, dangerLevel: form.dangerLevel,
         icon: form.icon, mapCoords: { x: Number(form.x), y: Number(form.y) },
+        allowPlayerThreads: form.allowPlayerThreads,
       }, token);
       setLocations(prev => [...prev, res.data]);
       setMsg('Location created!');
@@ -380,6 +381,17 @@ function LocationManager({ token }) {
               <label>Description</label>
               <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} />
             </div>
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={form.allowPlayerThreads}
+                  onChange={e => setForm(f => ({ ...f, allowPlayerThreads: e.target.checked }))}
+                  style={{ width: 'auto' }}
+                />
+                Players may open city-level threads here <span className="form-label-opt">(otherwise only staff)</span>
+              </label>
+            </div>
           </div>
           <button type="submit" className="btn-primary">Create Location</button>
         </form>
@@ -407,7 +419,7 @@ const VENUE_TYPES = [
   'library', 'arena', 'docks', 'palace', 'guild', 'dungeon', 'residence',
 ];
 
-const EMPTY_VENUE = { name: '', type: 'district', parent: '', icon: '🏠', description: '', lore: '', image: '', order: 0 };
+const EMPTY_VENUE = { name: '', type: 'district', parent: '', icon: '🏠', description: '', lore: '', image: '', order: 0, allowPlayerThreads: false };
 
 function VenueManager({ token }) {
   const [locations, setLocations] = useState([]);
@@ -456,6 +468,7 @@ function VenueManager({ token }) {
         lore: form.lore,
         image: form.image || null,
         order: Number(form.order) || 0,
+        allowPlayerThreads: form.allowPlayerThreads,
       }, token);
       setMsg('Venue created!');
       setForm(f => ({ ...EMPTY_VENUE, type: f.type, parent: f.parent }));
@@ -492,6 +505,7 @@ function VenueManager({ token }) {
           <span>{v.icon}</span>
           <span>{v.name}</span>
           <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{v.type}</span>
+          {v.allowPlayerThreads && <span title="Players may open threads" style={{ color: 'var(--gold)', fontSize: '0.7rem' }}>· open</span>}
           <button
             className="pm-ban-btn pm-ban-btn-ban"
             style={{ marginLeft: 'auto' }}
@@ -553,6 +567,17 @@ function VenueManager({ token }) {
           <div className="form-group" style={{ gridColumn: '1 / -1' }}>
             <label>Lore <span className="form-label-opt">(optional, shown in the venue banner)</span></label>
             <textarea value={form.lore} onChange={e => setForm(f => ({ ...f, lore: e.target.value }))} rows={3} />
+          </div>
+          <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={form.allowPlayerThreads}
+                onChange={e => setForm(f => ({ ...f, allowPlayerThreads: e.target.checked }))}
+                style={{ width: 'auto' }}
+              />
+              Players may open threads here <span className="form-label-opt">(otherwise only staff; players still reply)</span>
+            </label>
           </div>
         </div>
         <button type="submit" className="btn-primary" disabled={saving || !cityId}>

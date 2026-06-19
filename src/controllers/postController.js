@@ -2,7 +2,7 @@ const Post = require('../models/Post');
 const Comment = require('../models/Comment');
 const Character = require('../models/Character');
 const Location = require('../models/Location');
-const { canViewCity, canPostInCity, isStaffRole } = require('../utils/visibility');
+const { canViewCity, canPostInCity, canOpenThread, isStaffRole } = require('../utils/visibility');
 const { resolveCurrentCityId } = require('../utils/presence');
 const SubLocation = require('../models/SubLocation');
 
@@ -102,23 +102,30 @@ const createPost = async (req, res) => {
       return res.status(400).json({ success: false, error: 'You need an active character to post' });
     }
 
-    // Resolve the owning city. A venue (subLocation) carries its city, so a
-    // thread opened inside a venue inherits it even if `location` was omitted.
-    let targetCityId = location || null;
-    if (!targetCityId && subLocation) {
-      const venue = await SubLocation.findById(subLocation).select('city');
+    // Resolve the owning city and whether players may open threads here. A venue
+    // (subLocation) carries its city and its own permission; a city-level thread
+    // uses the city's permission.
+    let targetCityId = null;
+    let allowPlayerThreads = false;
+    if (subLocation) {
+      const venue = await SubLocation.findById(subLocation).select('city allowPlayerThreads');
       targetCityId = venue?.city || null;
+      allowPlayerThreads = Boolean(venue?.allowPlayerThreads);
+    } else if (location) {
+      const city = await Location.findById(location).select('allowPlayerThreads');
+      targetCityId = location;
+      allowPlayerThreads = Boolean(city?.allowPlayerThreads);
     }
 
-    // Presence gate: location-bound threads can only be opened in the city you
-    // are in (staff may open them anywhere, e.g. mod-seeded threads).
+    // Opening a thread requires presence plus permission: staff always, players
+    // only where the place opts them in. (Replies are gated by createComment.)
     if (targetCityId) {
       const currentCityId = character.currentLocation
         || (await Location.findOne({ isStartingLocation: true }).select('_id'))?._id;
-      if (!canPostInCity({ role: req.userRole, currentCityId, targetCityId })) {
+      if (!canOpenThread({ role: req.userRole, currentCityId, targetCityId, allowPlayerThreads })) {
         return res.status(403).json({
           success: false,
-          error: 'You must be in this location to post here',
+          error: 'Only the keepers of this place may open new threads here',
         });
       }
     }

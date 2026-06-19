@@ -24,7 +24,7 @@ function timeAgo(date) {
 export default function VenueForum() {
   const { cityId, venueId } = useParams();
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
 
   const [city, setCity]         = useState(null);
   const [venues, setVenues]     = useState([]);
@@ -82,6 +82,16 @@ export default function VenueForum() {
   const accent   = city?.theme?.accentColor || '#c9a84c';
   const totalPages = Math.ceil(total / LIMIT);
   const children = venues.filter(v => toId(v.parent) === venueId);
+  const isStaff = ['moderator', 'admin', 'head_admin'].includes(user?.role);
+  const canWrite = isStaff || Boolean(venue?.allowPlayerThreads);
+
+  const writeState = {
+    cityId,
+    locationId: cityId,
+    locationName: city?.name,
+    subLocationId: venueId,
+    subLocationName: venue?.name,
+  };
 
   return (
     <>
@@ -132,19 +142,15 @@ export default function VenueForum() {
 
                 <div className="af-posts-header">
                   <span className="af-posts-count">{total} {total === 1 ? 'thread' : 'threads'}</span>
-                  <button
-                    className="af-write-btn"
-                    style={{ '--accent': accent }}
-                    onClick={() => navigate('/forum/new', { state: {
-                      cityId,
-                      locationId: cityId,
-                      locationName: city?.name,
-                      subLocationId: venueId,
-                      subLocationName: venue?.name,
-                    } })}
-                  >
-                    ✍ Write Here
-                  </button>
+                  {canWrite && (
+                    <button
+                      className="af-write-btn"
+                      style={{ '--accent': accent }}
+                      onClick={() => navigate('/forum/new', { state: writeState })}
+                    >
+                      ✍ Write Here
+                    </button>
+                  )}
                 </div>
 
                 {postsLoading
@@ -153,19 +159,16 @@ export default function VenueForum() {
                     ? (
                       <div className="af-empty">
                         <p>No tales have been told here yet.</p>
-                        <button
-                          className="btn-primary"
-                          style={{ width: 'auto', padding: '0.6rem 1.5rem', marginTop: '1rem' }}
-                          onClick={() => navigate('/forum/new', { state: {
-                            cityId,
-                            locationId: cityId,
-                            locationName: city?.name,
-                            subLocationId: venueId,
-                            subLocationName: venue?.name,
-                          } })}
-                        >
-                          Be the first to write
-                        </button>
+                        {canWrite
+                          ? <button
+                              className="btn-primary"
+                              style={{ width: 'auto', padding: '0.6rem 1.5rem', marginTop: '1rem' }}
+                              onClick={() => navigate('/forum/new', { state: writeState })}
+                            >
+                              Be the first to write
+                            </button>
+                          : <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>Only the keepers of this place may open new threads here.</p>
+                        }
                       </div>
                     )
                     : <div className="af-post-list">
