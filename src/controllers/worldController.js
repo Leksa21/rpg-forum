@@ -98,4 +98,34 @@ const createSubLocation = async (req, res) => {
   }
 };
 
-module.exports = { getRegions, getLocations, getLocation, getSubLocations, getVenues, createLocation, createSubLocation };
+// Admin: delete a venue. Refuses if it still has sub-venues or threads, so an
+// admin must clear it deliberately rather than mass-deleting content by accident.
+const deleteSubLocation = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const childCount = await SubLocation.countDocuments({ parent: id });
+    if (childCount > 0) {
+      return res.status(400).json({ success: false, error: 'Remove its sub-venues first' });
+    }
+
+    const Post = require('../models/Post');
+    const threadCount = await Post.countDocuments({ subLocation: id });
+    if (threadCount > 0) {
+      return res.status(400).json({ success: false, error: 'This venue still has threads' });
+    }
+
+    const deleted = await SubLocation.findByIdAndDelete(id);
+    if (!deleted) {
+      return res.status(404).json({ success: false, error: 'Venue not found' });
+    }
+    res.json({ success: true, data: null });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+module.exports = {
+  getRegions, getLocations, getLocation, getSubLocations, getVenues,
+  createLocation, createSubLocation, deleteSubLocation,
+};

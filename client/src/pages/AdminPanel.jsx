@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { get, post, put } from '../lib/api';
+import { get, post, put, del } from '../lib/api';
 import BgScene from '../components/layout/BgScene';
 import Topbar from '../components/layout/Topbar';
 
-const TABS = ['Players', 'Quests', 'Locations', 'Seed World'];
+const TABS = ['Players', 'Quests', 'Locations', 'Venues', 'Seed World'];
 
 export default function AdminPanel() {
   const { token, user } = useAuth();
@@ -41,7 +41,8 @@ export default function AdminPanel() {
           {tab === 0 && <PlayersManager token={token} user={user} />}
           {tab === 1 && <QuestManager token={token} />}
           {tab === 2 && <LocationManager token={token} />}
-          {tab === 3 && <SeedPanel token={token} />}
+          {tab === 3 && <VenueManager token={token} />}
+          {tab === 4 && <SeedPanel token={token} />}
 
         </main>
       </div>
@@ -396,6 +397,177 @@ function LocationManager({ token }) {
             ))}
           </div>
       }
+    </div>
+  );
+}
+
+const VENUE_TYPES = [
+  'district', 'quarter', 'square', 'park', 'bridge', 'gate', 'wilds', 'venue',
+  'tavern', 'blacksmith', 'temple', 'guard', 'prison', 'market',
+  'library', 'arena', 'docks', 'palace', 'guild', 'dungeon', 'residence',
+];
+
+const EMPTY_VENUE = { name: '', type: 'district', parent: '', icon: '🏠', description: '', lore: '', image: '', order: 0 };
+
+function VenueManager({ token }) {
+  const [locations, setLocations] = useState([]);
+  const [cityId, setCityId]       = useState('');
+  const [venues, setVenues]       = useState([]);
+  const [loading, setLoading]     = useState(false);
+  const [form, setForm]           = useState(EMPTY_VENUE);
+  const [saving, setSaving]       = useState(false);
+  const [msg, setMsg]             = useState('');
+
+  useEffect(() => {
+    get('/api/world/locations')
+      .then(r => {
+        setLocations(r.data);
+        if (r.data.length > 0) setCityId(r.data[0]._id.toString());
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!cityId) return;
+    setLoading(true);
+    get(`/api/world/locations/${cityId}/venues`, token)
+      .then(r => setVenues(r.data || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [cityId, token]);
+
+  const refresh = () => {
+    get(`/api/world/locations/${cityId}/venues`, token)
+      .then(r => setVenues(r.data || []))
+      .catch(() => {});
+  };
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    setSaving(true); setMsg('');
+    try {
+      await post('/api/world/sublocations', {
+        city: cityId,
+        name: form.name.trim(),
+        type: form.type,
+        parent: form.parent || null,
+        icon: form.icon || '🏠',
+        description: form.description,
+        lore: form.lore,
+        image: form.image || null,
+        order: Number(form.order) || 0,
+      }, token);
+      setMsg('Venue created!');
+      setForm(f => ({ ...EMPTY_VENUE, type: f.type, parent: f.parent }));
+      refresh();
+    } catch (err) {
+      setMsg(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm('Delete this venue?')) return;
+    setMsg('');
+    try {
+      await del(`/api/world/sublocations/${id}`, token);
+      refresh();
+    } catch (err) {
+      setMsg(err.message);
+    }
+  };
+
+  // Group by parent so the list renders as an indented tree.
+  const byParent = {};
+  venues.forEach(v => {
+    const key = v.parent ? v.parent.toString() : 'root';
+    (byParent[key] = byParent[key] || []).push(v);
+  });
+
+  const renderTree = (parentKey, depth) =>
+    (byParent[parentKey] || []).map(v => (
+      <div key={v._id}>
+        <div className="admin-quest-row" style={{ paddingLeft: `${0.5 + depth * 1.5}rem` }}>
+          <span>{v.icon}</span>
+          <span>{v.name}</span>
+          <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{v.type}</span>
+          <button
+            className="pm-ban-btn pm-ban-btn-ban"
+            style={{ marginLeft: 'auto' }}
+            onClick={() => handleDelete(v._id)}
+          >
+            Delete
+          </button>
+        </div>
+        {renderTree(v._id.toString(), depth + 1)}
+      </div>
+    ));
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', gap: '1rem' }}>
+        <span className="db-section-title" style={{ margin: 0 }}>Venues</span>
+        <select className="form-select" style={{ maxWidth: 260 }} value={cityId} onChange={e => setCityId(e.target.value)}>
+          {locations.map(l => <option key={l._id} value={l._id}>{l.icon} {l.name}</option>)}
+        </select>
+      </div>
+
+      {msg && <div className="alert error visible" style={{ marginBottom: '1rem' }}>{msg}</div>}
+
+      <form className="admin-form" onSubmit={handleCreate}>
+        <div className="admin-form-grid">
+          <div className="form-group">
+            <label>Name</label>
+            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Southern District" required />
+          </div>
+          <div className="form-group">
+            <label>Type</label>
+            <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="form-select">
+              {VENUE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Nested under</label>
+            <select value={form.parent} onChange={e => setForm(f => ({ ...f, parent: e.target.value }))} className="form-select">
+              <option value="">— Top level (city) —</option>
+              {venues.map(v => <option key={v._id} value={v._id}>{v.icon} {v.name}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Icon (emoji)</label>
+            <input value={form.icon} onChange={e => setForm(f => ({ ...f, icon: e.target.value }))} maxLength={4} />
+          </div>
+          <div className="form-group">
+            <label>Order</label>
+            <input type="number" value={form.order} onChange={e => setForm(f => ({ ...f, order: e.target.value }))} />
+          </div>
+          <div className="form-group">
+            <label>Image URL <span className="form-label-opt">(optional)</span></label>
+            <input value={form.image} onChange={e => setForm(f => ({ ...f, image: e.target.value }))} placeholder="https://…" />
+          </div>
+          <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+            <label>Description</label>
+            <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="Short summary shown on the venue card" />
+          </div>
+          <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+            <label>Lore <span className="form-label-opt">(optional, shown in the venue banner)</span></label>
+            <textarea value={form.lore} onChange={e => setForm(f => ({ ...f, lore: e.target.value }))} rows={3} />
+          </div>
+        </div>
+        <button type="submit" className="btn-primary" disabled={saving || !cityId}>
+          {saving ? 'Creating…' : 'Create Venue'}
+        </button>
+      </form>
+
+      <div style={{ marginTop: '1.5rem' }}>
+        {loading
+          ? <p style={{ color: 'var(--text-muted)' }}>Loading…</p>
+          : venues.length === 0
+            ? <p style={{ color: 'var(--text-muted)' }}>No venues here yet. Create the first district above.</p>
+            : <div className="admin-location-list">{renderTree('root', 0)}</div>
+        }
+      </div>
     </div>
   );
 }

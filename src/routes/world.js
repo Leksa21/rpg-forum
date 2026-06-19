@@ -3,7 +3,7 @@ const router = express.Router();
 const { protect, attachUser, requireRole } = require('../middleware/auth');
 const {
   getRegions, getLocations, getLocation, getSubLocations, getVenues,
-  createLocation, createSubLocation,
+  createLocation, createSubLocation, deleteSubLocation,
 } = require('../controllers/worldController');
 
 router.get('/regions',                  getRegions);
@@ -12,8 +12,9 @@ router.get('/locations/:id',            getLocation);
 router.get('/locations/:cityId/subs',   getSubLocations);
 router.get('/locations/:cityId/venues', attachUser, getVenues);
 
-router.post('/locations',     protect, requireRole('admin', 'head_admin'), createLocation);
-router.post('/sublocations',  protect, requireRole('admin', 'head_admin'), createSubLocation);
+router.post('/locations',        protect, requireRole('admin', 'head_admin'), createLocation);
+router.post('/sublocations',     protect, requireRole('admin', 'head_admin'), createSubLocation);
+router.delete('/sublocations/:id', protect, requireRole('admin', 'head_admin'), deleteSubLocation);
 
 router.post('/seed', protect, requireRole('admin', 'head_admin'), async (req, res) => {
   try {
