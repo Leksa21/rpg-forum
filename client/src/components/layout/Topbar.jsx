@@ -38,11 +38,8 @@ export default function Topbar() {
 
   return (
     <header className="topbar">
-      {/* Left: brand + nav dropdown */}
+      {/* Left: nav dropdown */}
       <div className="topbar-left" ref={navRef}>
-        <Link to="/dashboard" className="topbar-brand">
-          <span>⚔</span> RPG Forum
-        </Link>
         <button
           className={`topbar-menu-btn${navOpen ? ' open' : ''}`}
           onClick={() => { setNavOpen(o => !o); setCharOpen(false); }}

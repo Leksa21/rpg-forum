@@ -19,6 +19,7 @@ import AreaForum         from './pages/AreaForum';
 import VenueForum        from './pages/VenueForum';
 import Combat            from './pages/Combat';
 import LoadingScreen     from './components/layout/LoadingScreen';
+import SiteFooter        from './components/layout/SiteFooter';
 
 // Redirects based on full auth + character state
 function SmartRedirect() {
@@ -90,6 +91,7 @@ export default function App() {
           <Route path="/world/areas/:cityId/venue/:venueId" element={<DashboardRoute><VenueForum /></DashboardRoute>} />
           <Route path="/combat/:id"        element={<DashboardRoute><Combat /></DashboardRoute>} />
         </Routes>
+        <SiteFooter />
       </BrowserRouter>
     </AuthProvider>
   );
