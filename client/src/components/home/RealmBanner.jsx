@@ -17,6 +17,11 @@ export default function RealmBanner() {
         <p className="home-banner-tagline">
           Three continents, a thousand tales. Step through the gate and write your own.
         </p>
+        <div className="home-banner-stats">
+          <span className="home-stat-chip"><strong>3</strong> Continents</span>
+          <span className="home-stat-chip"><strong>12</strong> Locations</span>
+          <span className="home-stat-chip home-stat-live"><span className="home-stat-pip" /> Realm is live</span>
+        </div>
         <div className="home-banner-cta">
           <Link to="/map" className="btn-cta home-banner-enter">⚔ Enter the Realm</Link>
           <Link to="/world/areas" className="home-banner-ghost">Browse the Areas →</Link>

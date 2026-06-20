@@ -59,6 +59,10 @@ export default function Dashboard() {
             </aside>
           </div>
 
+          <div className="home-section">
+            <span className="home-section-label">✦ Community</span>
+            <span className="home-section-rule" />
+          </div>
           <div className="home-community">
             <ActiveAdventurers />
             <GlobalChat />
