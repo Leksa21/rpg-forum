@@ -4,6 +4,7 @@ import { get } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import BgScene from '../components/layout/BgScene';
 import Topbar from '../components/layout/Topbar';
+import Breadcrumb from '../components/layout/Breadcrumb';
 import TravelPanel from '../components/travel/TravelPanel';
 
 const CLASS_COLORS = {
@@ -93,6 +94,12 @@ export default function AreaForum() {
       <div className="dashboard">
         <Topbar />
         <main className="dash-main af-main">
+
+          <Breadcrumb items={[
+            { label: '🗺 Map', to: '/map' },
+            location.region?.name && { label: location.region.name, to: '/world/areas' },
+            { label: location.name },
+          ]} />
 
           <div className="af-banner" style={{ background: gradient }}>
             <div className="af-banner-inner">

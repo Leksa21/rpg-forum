@@ -5,6 +5,7 @@ import { toId } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
 import BgScene from '../components/layout/BgScene';
 import Topbar from '../components/layout/Topbar';
+import Breadcrumb from '../components/layout/Breadcrumb';
 
 const CLASS_COLORS = {
   Warrior: '#e74c3c', Mage: '#3498db', Rogue: '#f39c12',
@@ -82,6 +83,15 @@ export default function VenueForum() {
   const accent   = city?.theme?.accentColor || '#c9a84c';
   const totalPages = Math.ceil(total / LIMIT);
   const children = venues.filter(v => toId(v.parent) === venueId);
+
+  // Walk parent links up to the city so the breadcrumb shows the full path.
+  const ancestors = [];
+  let cursor = venue?.parent ? venues.find(v => toId(v._id) === toId(venue.parent)) : null;
+  while (cursor) {
+    ancestors.unshift(cursor);
+    cursor = cursor.parent ? venues.find(v => toId(v._id) === toId(cursor.parent)) : null;
+  }
+
   const isStaff = ['moderator', 'admin', 'head_admin'].includes(user?.role);
   const canWrite = isStaff || Boolean(venue?.allowPlayerThreads);
 
@@ -99,6 +109,13 @@ export default function VenueForum() {
       <div className="dashboard">
         <Topbar />
         <main className="dash-main af-main">
+
+          <Breadcrumb items={[
+            { label: '🗺 Map', to: '/map' },
+            { label: city?.name || 'City', to: `/world/areas/${cityId}` },
+            ...ancestors.map(a => ({ label: a.name, to: `/world/areas/${cityId}/venue/${a._id}` })),
+            { label: venue?.name || 'Here' },
+          ]} />
 
           <div className="af-banner" style={{ background: gradient }}>
             <div className="af-banner-inner">

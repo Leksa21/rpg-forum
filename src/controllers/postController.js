@@ -8,11 +8,13 @@ const SubLocation = require('../models/SubLocation');
 
 const getPosts = async (req, res) => {
   try {
-    const { category, location, subLocation, page = 1, limit = 20 } = req.query;
+    const { category, location, subLocation, ooc, page = 1, limit = 20 } = req.query;
     const filter = {};
     if (category) filter.category = category;
     if (location) filter.location = location;
     if (subLocation) filter.subLocation = subLocation;
+    // The Off-Topic board shows only out-of-character posts (no in-world place).
+    if (ooc === 'true' || ooc === '1') filter.location = null;
     const skip = (Number(page) - 1) * Number(limit);
 
     // Area-forum reads (scoped to a city or a venue within it) are presence-
@@ -65,7 +67,9 @@ const getPost = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id)
       .populate('character', 'name avatar class race level')
-      .populate('author', 'username');
+      .populate('author', 'username')
+      .populate('location', 'name theme')
+      .populate('subLocation', 'name parent');
 
     if (!post) {
       return res.status(404).json({ success: false, error: 'Post not found' });
@@ -73,9 +77,11 @@ const getPost = async (req, res) => {
 
     // Presence gate: a location-bound thread is invisible (404, no leak) to
     // anyone not currently in its city. OOC threads (no location) stay open.
+    // location is populated for the breadcrumb, so compare on its _id.
     if (post.location && !isStaffRole(req.userRole)) {
       const currentCityId = await resolveCurrentCityId(req.userId);
-      if (!canViewCity({ role: req.userRole, currentCityId, targetCityId: post.location })) {
+      const targetCityId = post.location._id ?? post.location;
+      if (!canViewCity({ role: req.userRole, currentCityId, targetCityId })) {
         return res.status(404).json({ success: false, error: 'Post not found' });
       }
     }

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { get, post, del } from '../lib/api';
 import BgScene from '../components/layout/BgScene';
 import Topbar from '../components/layout/Topbar';
+import Breadcrumb from '../components/layout/Breadcrumb';
 
 function formatDate(iso) {
   if (!iso) return '';
@@ -111,7 +112,15 @@ export default function PostDetail() {
         <Topbar />
         <main className="dash-main">
 
-          <Link to="/forum" className="post-back-link">← Back to Forum</Link>
+          <Breadcrumb items={postData.location ? [
+            { label: '🗺 Map', to: '/map' },
+            { label: postData.location.name, to: `/world/areas/${postData.location._id}` },
+            postData.subLocation && { label: postData.subLocation.name, to: `/world/areas/${postData.location._id}/venue/${postData.subLocation._id}` },
+            { label: postData.title },
+          ] : [
+            { label: 'Off-Topic', to: '/forum' },
+            { label: postData.title },
+          ]} />
 
           {/* Post */}
           <article className="post-article">

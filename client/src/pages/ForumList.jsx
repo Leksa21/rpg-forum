@@ -84,7 +84,7 @@ export default function ForumList() {
     setIsLoading(true);
     setError(null);
 
-    const params = new URLSearchParams({ page });
+    const params = new URLSearchParams({ page, ooc: 'true' });
     if (category) params.set('category', category);
 
     get(`/api/posts?${params}`, token)
@@ -122,8 +122,8 @@ export default function ForumList() {
           {/* Page header */}
           <div className="forum-header">
             <div className="forum-header-left">
-              <h1 className="forum-title">⚔ The Forum</h1>
-              <p className="forum-subtitle">Chronicles, quests, and tales from across the realm</p>
+              <h1 className="forum-title">☕ Off-Topic</h1>
+              <p className="forum-subtitle">Out-of-character board — rules, announcements, and tavern chatter (in-world tales live in their own places on the map)</p>
             </div>
             <button
               className="btn-primary forum-new-btn"

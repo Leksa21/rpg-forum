@@ -2819,6 +2819,52 @@ a.db-hero-name:hover {
   line-height: 1.35;
 }
 
+/* ── Breadcrumb ───────────────────────────────────────────── */
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.1rem 0.15rem;
+  margin-bottom: 1.1rem;
+  font-family: 'Crimson Text', serif;
+  font-size: 0.9rem;
+}
+
+.breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.breadcrumb-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 0.1rem 0.35rem;
+  border-radius: 6px;
+  transition: color 150ms ease, background 150ms ease;
+}
+
+.breadcrumb-link:hover {
+  color: var(--gold, #c9a84c);
+  background: rgba(201, 168, 76, 0.08);
+}
+
+.breadcrumb-text {
+  color: var(--text-muted);
+  padding: 0.1rem 0.35rem;
+}
+
+.breadcrumb-current {
+  color: var(--gold, #c9a84c);
+  font-weight: 600;
+  padding: 0.1rem 0.35rem;
+}
+
+.breadcrumb-sep {
+  color: rgba(201, 168, 76, 0.35);
+  margin: 0 0.1rem;
+}
+
 .af-post-list { display: flex; flex-direction: column; gap: 0.5rem; }
 
 .af-post-row {

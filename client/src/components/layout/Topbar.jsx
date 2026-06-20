@@ -4,9 +4,10 @@ import { useAuth } from '../../context/AuthContext';
 
 const NAV = [
   { to: '/dashboard', label: 'Home' },
-  { to: '/forum',     label: 'Forum' },
+  { to: '/map',       label: '🗺 Map (the Realm)' },
+  { to: '/world/areas', label: 'Areas' },
   { to: '/quests',    label: 'Quests' },
-  { to: '/map',       label: 'Map' },
+  { to: '/forum',     label: 'Off-Topic' },
   { to: '/character', label: 'Profile' },
 ];
 
