@@ -6,7 +6,9 @@ const getMyCharacter = async (req, res) => {
       { owner: req.userId, isDead: false },
       { lastActiveAt: new Date() },
       { new: true },
-    ).populate('discoveredLocations', 'name icon mapCoords');
+    )
+      .populate('discoveredLocations', 'name icon mapCoords')
+      .populate('currentLocation', 'name icon');
     if (!character) {
       return res.status(404).json({ success: false, error: 'No character found' });
     }

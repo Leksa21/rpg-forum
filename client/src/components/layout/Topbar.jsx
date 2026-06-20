@@ -67,8 +67,25 @@ export default function Topbar() {
         )}
       </div>
 
-      {/* Center: intentionally empty */}
-      <div className="topbar-center" />
+      {/* Center: persistent "you are here" indicator */}
+      <div className="topbar-center">
+        {character?.currentLocation ? (
+          <Link to={`/world/areas/${character.currentLocation._id}`} className="topbar-here" title="Open the forum where you are">
+            <span className="topbar-here-icon">{character.currentLocation.icon || '📍'}</span>
+            <span className="topbar-here-text">
+              <span className="topbar-here-label">You are in</span>
+              <span className="topbar-here-name">{character.currentLocation.name}</span>
+            </span>
+          </Link>
+        ) : (
+          <Link to="/map" className="topbar-here topbar-here--muted" title="Open the map">
+            <span className="topbar-here-icon">🧭</span>
+            <span className="topbar-here-text">
+              <span className="topbar-here-name">Enter the Realm</span>
+            </span>
+          </Link>
+        )}
+      </div>
 
       {/* Right: character dropdown */}
       <div className="topbar-right" ref={charRef}>

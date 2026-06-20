@@ -125,8 +125,11 @@ function LocationPanel({ location, open, onClose, navigate, currentLocId, player
               )}
             </div>
 
-            <button className="fm-view-area" onClick={() => navigate(`/world/areas/${location._id}`)}>
-              📜 View Area Forum
+            <button
+              className={`fm-view-area${isHere ? ' fm-view-area--primary' : ''}`}
+              onClick={() => navigate(`/world/areas/${location._id}`)}
+            >
+              📜 {isHere ? 'Enter this place’s forum →' : 'View area forum'}
             </button>
           </div>
         </>

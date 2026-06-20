@@ -2865,6 +2865,69 @@ a.db-hero-name:hover {
   margin: 0 0.1rem;
 }
 
+/* ── Topbar "you are here" chip ────────────────────────────── */
+.topbar-here {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 100%;
+  padding: 0.3rem 0.85rem;
+  border: 1px solid rgba(201, 168, 76, 0.22);
+  border-radius: 999px;
+  background: rgba(201, 168, 76, 0.06);
+  text-decoration: none;
+  transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+}
+
+.topbar-here:hover {
+  border-color: rgba(201, 168, 76, 0.5);
+  background: rgba(201, 168, 76, 0.12);
+  transform: translateY(-1px);
+}
+
+.topbar-here-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.topbar-here-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+  min-width: 0;
+}
+
+.topbar-here-label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.topbar-here-name {
+  font-family: 'Cinzel', serif;
+  font-size: 0.9rem;
+  color: var(--gold, #c9a84c);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar-here--muted .topbar-here-name {
+  color: var(--text-muted);
+}
+
+@media (max-width: 640px) {
+  .topbar-here-text { display: none; }
+}
+
+.fm-view-area--primary {
+  background: linear-gradient(180deg, rgba(201, 168, 76, 0.22), rgba(201, 168, 76, 0.12));
+  border-color: rgba(201, 168, 76, 0.55);
+  color: var(--gold, #c9a84c);
+  font-weight: 600;
+}
+
 .af-post-list { display: flex; flex-direction: column; gap: 0.5rem; }
 
 .af-post-row {
