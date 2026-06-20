@@ -5,6 +5,7 @@ const Location = require('../models/Location');
 const { canViewCity, canPostInCity, canOpenThread, isStaffRole } = require('../utils/visibility');
 const { resolveCurrentCityId } = require('../utils/presence');
 const { sanitizeRich } = require('../utils/sanitizeContent');
+const { notifyThreadReply } = require('./notificationController');
 const SubLocation = require('../models/SubLocation');
 
 const getPosts = async (req, res) => {
@@ -287,6 +288,9 @@ const createComment = async (req, res) => {
       { path: 'character', select: 'name avatar class race level' },
       { path: 'author', select: 'username' },
     ]);
+
+    // Tell the thread author and prior participants that word has spread.
+    await notifyThreadReply(post, character._id, req.userId);
 
     res.status(201).json({ success: true, data: populated });
   } catch (err) {

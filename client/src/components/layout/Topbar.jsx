@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import NotificationBell from './NotificationBell';
 
 const NAV = [
   { to: '/dashboard', label: 'Home' },
@@ -87,7 +88,8 @@ export default function Topbar() {
         )}
       </div>
 
-      {/* Right: character dropdown */}
+      {/* Right: notifications + character dropdown */}
+      <NotificationBell />
       <div className="topbar-right" ref={charRef}>
         <button
           className={`topbar-char-btn${charOpen ? ' open' : ''}`}
