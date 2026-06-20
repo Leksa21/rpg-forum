@@ -339,7 +339,7 @@
   display: grid;
   grid-template-columns: 1fr 1.15fr;
   gap: 1.5rem;
-  align-items: stretch;
+  align-items: start;
 }
 .home-community > .aa-panel,
 .home-community .chat-wrap {
@@ -350,9 +350,10 @@
   border-radius: 16px;
   box-shadow: 0 12px 32px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.04);
 }
-/* let the chat message area grow so both columns match height */
-.home-community .chat-wrap { height: 100%; }
-.home-community .chat-messages { flex: 1; height: auto; min-height: 240px; }
+/* both panels keep a bounded height and scroll internally —
+   never let the chat history or roster stretch the whole page */
+.home-community .aa-list { max-height: 360px; }
+.home-community .chat-messages { height: 360px; }
 
 /* ───────────────────────── Responsive ───────────────────────── */
 @media (max-width: 920px) {
