@@ -18,16 +18,16 @@
   position: absolute; inset: 0;
   background: url('/auth-hero.jpg') no-repeat;
   background-size: cover;
-  background-position: 62% center;
+  background-position: 78% center;
 }
-/* tint the art toward the emerald theme + darken the seam and base */
+/* light emerald tint + darken only the seam and base so the warrior stays vivid */
 .auth-hero-veil {
   position: absolute; inset: 0;
   background:
-    linear-gradient(90deg, rgba(6,11,8,0.45) 0%, transparent 20%, transparent 66%, rgba(6,11,8,0.55) 100%),
-    radial-gradient(130% 100% at 60% 35%, transparent 45%, rgba(6,11,8,0.55) 100%),
-    linear-gradient(0deg, rgba(6,11,8,0.7) 0%, transparent 38%),
-    linear-gradient(160deg, rgba(20,60,42,0.18) 0%, transparent 50%);
+    linear-gradient(90deg, transparent 0%, transparent 70%, rgba(6,11,8,0.5) 100%),
+    radial-gradient(135% 105% at 55% 38%, transparent 55%, rgba(6,11,8,0.42) 100%),
+    linear-gradient(0deg, rgba(6,11,8,0.62) 0%, transparent 34%),
+    linear-gradient(160deg, rgba(20,60,42,0.12) 0%, transparent 55%);
   pointer-events: none;
 }
 /* glowing rune-crack running down the dividing seam */
