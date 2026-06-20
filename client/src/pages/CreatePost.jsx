@@ -4,8 +4,17 @@ import { useAuth } from '../context/AuthContext';
 import { post } from '../lib/api';
 import BgScene from '../components/layout/BgScene';
 import Topbar from '../components/layout/Topbar';
+import RichTextEditor from '../components/forum/RichTextEditor';
 
 const CATEGORIES = ['General', 'Quests', 'Lore', 'Characters', 'Trading', 'Announcements'];
+
+// Plain-text length of rich-text HTML, for validation.
+function stripText(html) {
+  if (typeof document === 'undefined') return (html || '').trim();
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html || '';
+  return (tmp.textContent || '').trim();
+}
 
 export default function CreatePost() {
   const { token, character } = useAuth();
@@ -31,10 +40,11 @@ export default function CreatePost() {
     e.preventDefault();
     setError('');
 
+    const text = stripText(content);
     if (!title.trim())   { setError('Title is required.'); return; }
     if (title.length < 3){ setError('Title must be at least 3 characters.'); return; }
-    if (!content.trim()) { setError('Content is required.'); return; }
-    if (content.length < 10) { setError('Content must be at least 10 characters.'); return; }
+    if (!text)           { setError('Content is required.'); return; }
+    if (text.length < 10){ setError('Content must be at least 10 characters.'); return; }
 
     const tagList = tags.split(',').map(t => t.trim()).filter(Boolean).slice(0, 5);
 
@@ -104,17 +114,8 @@ export default function CreatePost() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="cp-content">Content</label>
-                <textarea
-                  id="cp-content"
-                  value={content}
-                  onChange={e => setContent(e.target.value)}
-                  placeholder="Tell your story, in character…"
-                  rows={12}
-                  maxLength={20000}
-                  className="create-post-textarea"
-                />
-                <span className="form-hint">{content.length}/20000</span>
+                <label>Content</label>
+                <RichTextEditor value={content} onChange={setContent} placeholder="Tell your story, in character…" />
               </div>
 
               <div className="form-group">
