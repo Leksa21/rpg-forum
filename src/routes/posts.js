@@ -3,7 +3,7 @@ const router = express.Router();
 const { protect, attachUser } = require('../middleware/auth');
 const {
   getPosts, getPost, createPost, updatePost, deletePost,
-  getComments, createComment, deleteComment,
+  getComments, createComment, updateComment, deleteComment,
 } = require('../controllers/postController');
 
 router.get('/',                 attachUser, getPosts);
@@ -14,6 +14,7 @@ router.delete('/:id',           protect,  deletePost);
 
 router.get('/:id/comments',     attachUser, getComments);
 router.post('/:id/comments',    protect,  createComment);
+router.put('/:id/comments/:commentId', protect, updateComment);
 router.delete('/:id/comments/:commentId', protect, deleteComment);
 
 module.exports = router;

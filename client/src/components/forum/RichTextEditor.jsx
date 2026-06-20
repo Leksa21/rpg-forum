@@ -9,9 +9,17 @@ const COLORS = ['#e6ddc9', '#c9a84c', '#e74c3c', '#3498db', '#27ae60', '#9b59b6'
 export default function RichTextEditor({ value, onChange, placeholder }) {
   const ref = useRef(null);
 
+  // Sync the DOM from `value` when it is set externally — on mount (e.g. seeding
+  // an edit with existing content) or when cleared after submit — but never
+  // while the user is actively typing, to preserve the caret.
   useEffect(() => {
-    if (ref.current && (value ?? '') === '' && ref.current.innerHTML !== '') {
-      ref.current.innerHTML = '';
+    const el = ref.current;
+    if (!el) return;
+    const v = value ?? '';
+    if (v === '') {
+      if (el.innerHTML !== '') el.innerHTML = '';
+    } else if (document.activeElement !== el && el.innerHTML !== v) {
+      el.innerHTML = v;
     }
   }, [value]);
 

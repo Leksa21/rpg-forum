@@ -3142,6 +3142,59 @@ a.db-hero-name:hover {
 .rich-text p { margin: 0 0 0.6rem; }
 .rich-text p:last-child { margin-bottom: 0; }
 
+/* ── Inline edit (topic + replies) ────────────────────────── */
+.thread-head-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+}
+.post-edit-btn {
+  background: none;
+  border: 1px solid rgba(201, 168, 76, 0.4);
+  color: var(--gold, #c9a84c);
+  border-radius: 8px;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 140ms ease;
+}
+.post-edit-btn:hover { background: rgba(201, 168, 76, 0.12); }
+
+.edit-box { text-align: left; }
+.edit-title {
+  width: 100%;
+  margin-bottom: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  font-family: 'Cinzel', serif;
+  font-size: 1.2rem;
+  color: var(--text);
+  background: rgba(8, 8, 14, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  outline: none;
+}
+.edit-title:focus { border-color: rgba(201, 168, 76, 0.5); }
+.edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+.edit-actions .btn-primary,
+.edit-actions .btn-secondary { width: auto; padding: 0.5rem 1.3rem; }
+
+.reply-manage { display: inline-flex; gap: 0.75rem; margin-left: auto; }
+.reply-edit {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--gold, #c9a84c);
+  font-size: 0.78rem;
+  opacity: 0.75;
+}
+.reply-edit:hover { opacity: 1; }
+.reply-edited { color: var(--text-muted); font-style: italic; }
+
 /* ── Breadcrumb ───────────────────────────────────────────── */
 .breadcrumb {
   display: flex;

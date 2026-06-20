@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { get, post, del } from '../lib/api';
+import { get, post, put, del } from '../lib/api';
 import BgScene from '../components/layout/BgScene';
 import Topbar from '../components/layout/Topbar';
 import Breadcrumb from '../components/layout/Breadcrumb';
@@ -20,7 +20,7 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-// Strip tags to check whether the editor actually has text (not just markup).
+// Plain-text presence check for rich-text HTML.
 function hasText(html) {
   if (typeof document === 'undefined') return !!html;
   const tmp = document.createElement('div');
@@ -40,6 +40,13 @@ export default function PostDetail() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [commentError, setCommentError] = useState('');
+
+  // Inline editing: editingId is the topic id or a comment id; null = nothing.
+  const [editingId, setEditingId] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editHtml, setEditHtml] = useState('');
+  const [editError, setEditError] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,8 +81,46 @@ export default function PostDetail() {
     }
   };
 
+  const startEditTopic = () => {
+    setEditingId(postData._id);
+    setEditTitle(postData.title);
+    setEditHtml(postData.content);
+    setEditError('');
+  };
+  const startEditComment = (c) => {
+    setEditingId(c._id);
+    setEditHtml(c.content);
+    setEditError('');
+  };
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditHtml('');
+    setEditTitle('');
+    setEditError('');
+  };
+
+  const saveEdit = async () => {
+    if (!hasText(editHtml)) { setEditError('Content is required.'); return; }
+    setEditSaving(true);
+    setEditError('');
+    try {
+      if (editingId === postData._id) {
+        const res = await put(`/api/posts/${postData._id}`, { title: editTitle.trim(), content: editHtml }, token);
+        setPost(prev => ({ ...prev, title: res.data.title, content: res.data.content }));
+      } else {
+        const res = await put(`/api/posts/${id}/comments/${editingId}`, { content: editHtml }, token);
+        setComments(prev => prev.map(c => (c._id === editingId ? { ...c, content: res.data.content, isEdited: true } : c)));
+      }
+      cancelEdit();
+    } catch (err) {
+      setEditError(err.message);
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   const handleDeletePost = async () => {
-    if (!confirm('Delete this topic and all replies?')) return;
+    if (!confirm('Delete this topic?')) return;
     try {
       await del(`/api/posts/${id}`, token);
       navigate('/forum');
@@ -85,6 +130,7 @@ export default function PostDetail() {
   };
 
   const handleDeleteComment = async (commentId) => {
+    if (!confirm('Delete this reply?')) return;
     try {
       await del(`/api/posts/${id}/comments/${commentId}`, token);
       setComments(prev => prev.filter(c => c._id !== commentId));
@@ -132,6 +178,13 @@ export default function PostDetail() {
     { label: postData.title },
   ];
 
+  // Edit/delete is allowed only on the last word in the thread (and only for
+  // its own author) — or for mods. The topic is the last word only with no
+  // replies; otherwise the last word is the newest reply.
+  const lastCommentId = comments.length ? comments[comments.length - 1]._id : null;
+  const topicCanManage = isAdmin || (isAuthor && comments.length === 0);
+  const editingTopic = editingId === postData._id;
+
   return (
     <>
       <BgScene />
@@ -143,22 +196,43 @@ export default function PostDetail() {
 
           {/* Topic header — title + description only, no author identity */}
           <header className="thread-head">
-            <div className="thread-head-badges">
-              <span className="post-cat-badge">{postData.category}</span>
-              {postData.isPinned && <span className="post-pin-badge">📌 Pinned</span>}
-              {postData.isLocked && <span className="post-lock-badge">🔒 Locked</span>}
-            </div>
-            <h1 className="thread-title">{postData.title}</h1>
-            <RichText className="thread-desc" html={postData.content} />
-            {postData.tags?.length > 0 && (
-              <div className="post-art-tags">
-                {postData.tags.map(t => <span key={t} className="forum-tag">{t}</span>)}
+            {editingTopic ? (
+              <div className="edit-box">
+                <input
+                  className="edit-title"
+                  value={editTitle}
+                  onChange={e => setEditTitle(e.target.value)}
+                  maxLength={200}
+                  placeholder="Topic title"
+                />
+                <RichTextEditor value={editHtml} onChange={setEditHtml} placeholder="Topic description…" />
+                {editError && <div className="alert error visible">{editError}</div>}
+                <div className="edit-actions">
+                  <button className="btn-secondary" type="button" onClick={cancelEdit} disabled={editSaving}>Cancel</button>
+                  <button className="btn-primary" type="button" onClick={saveEdit} disabled={editSaving}>{editSaving ? 'Saving…' : 'Save'}</button>
+                </div>
               </div>
-            )}
-            {(isAuthor || isAdmin) && (
-              <div className="thread-head-actions">
-                <button className="post-delete-btn" onClick={handleDeletePost}>Delete topic</button>
-              </div>
+            ) : (
+              <>
+                <div className="thread-head-badges">
+                  <span className="post-cat-badge">{postData.category}</span>
+                  {postData.isPinned && <span className="post-pin-badge">📌 Pinned</span>}
+                  {postData.isLocked && <span className="post-lock-badge">🔒 Locked</span>}
+                </div>
+                <h1 className="thread-title">{postData.title}</h1>
+                <RichText className="thread-desc" html={postData.content} />
+                {postData.tags?.length > 0 && (
+                  <div className="post-art-tags">
+                    {postData.tags.map(t => <span key={t} className="forum-tag">{t}</span>)}
+                  </div>
+                )}
+                {topicCanManage && (
+                  <div className="thread-head-actions">
+                    <button className="post-edit-btn" onClick={startEditTopic}>Edit</button>
+                    <button className="post-delete-btn" onClick={handleDeletePost}>Delete topic</button>
+                  </div>
+                )}
+              </>
             )}
           </header>
 
@@ -166,16 +240,35 @@ export default function PostDetail() {
           <section className="reply-list">
             {comments.map(c => {
               const cc = CLASS_COLORS[c.character?.class] || 'var(--gold)';
+              const mine = user?._id === c.author?._id;
+              const canManage = isAdmin || (mine && c._id === lastCommentId);
+              const editingThis = editingId === c._id;
               return (
                 <article key={c._id} className="reply">
                   <div className="reply-text">
-                    <RichText html={c.content} />
-                    <div className="reply-foot">
-                      <span className="reply-date">{formatDate(c.createdAt)}</span>
-                      {(user?._id === c.author?._id || isAdmin) && (
-                        <button className="reply-del" onClick={() => handleDeleteComment(c._id)}>Delete</button>
-                      )}
-                    </div>
+                    {editingThis ? (
+                      <div className="edit-box">
+                        <RichTextEditor value={editHtml} onChange={setEditHtml} placeholder="Edit your reply…" />
+                        {editError && <div className="alert error visible">{editError}</div>}
+                        <div className="edit-actions">
+                          <button className="btn-secondary" type="button" onClick={cancelEdit} disabled={editSaving}>Cancel</button>
+                          <button className="btn-primary" type="button" onClick={saveEdit} disabled={editSaving}>{editSaving ? 'Saving…' : 'Save'}</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <RichText html={c.content} />
+                        <div className="reply-foot">
+                          <span className="reply-date">{formatDate(c.createdAt)}{c.isEdited && <span className="reply-edited"> · edited</span>}</span>
+                          {canManage && (
+                            <span className="reply-manage">
+                              <button className="reply-edit" onClick={() => startEditComment(c)}>Edit</button>
+                              <button className="reply-del" onClick={() => handleDeleteComment(c._id)}>Delete</button>
+                            </span>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   <aside className="reply-profile" style={{ '--cc': cc }}>

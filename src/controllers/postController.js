@@ -165,11 +165,22 @@ const updatePost = async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ success: false, error: 'Post not found' });
 
-    if (post.author.toString() !== req.userId && req.userRole !== 'admin' && req.userRole !== 'head_admin') {
+    const isMod = req.userRole === 'admin' || req.userRole === 'head_admin';
+    if (post.author.toString() !== req.userId && !isMod) {
       return res.status(403).json({ success: false, error: 'Not authorized' });
     }
 
     const { title, content, tags, isPinned, isLocked } = req.body;
+
+    // The author may revise a topic only before anyone has replied (it must
+    // still be the last word in the thread). Mods may always moderate.
+    if ((title !== undefined || content !== undefined || tags !== undefined) && !isMod) {
+      const replyCount = await Comment.countDocuments({ post: post._id });
+      if (replyCount > 0) {
+        return res.status(403).json({ success: false, error: 'You can only edit a topic before anyone has replied' });
+      }
+    }
+
     if (title) post.title = title.trim();
     if (content) post.content = sanitizeRich(content);
     if (tags) post.tags = tags;
@@ -191,8 +202,17 @@ const deletePost = async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ success: false, error: 'Post not found' });
 
-    if (post.author.toString() !== req.userId && req.userRole !== 'admin' && req.userRole !== 'head_admin') {
+    const isMod = req.userRole === 'admin' || req.userRole === 'head_admin';
+    if (post.author.toString() !== req.userId && !isMod) {
       return res.status(403).json({ success: false, error: 'Not authorized' });
+    }
+
+    // The author may delete a topic only before anyone has replied.
+    if (!isMod) {
+      const replyCount = await Comment.countDocuments({ post: post._id });
+      if (replyCount > 0) {
+        return res.status(403).json({ success: false, error: 'You can only delete a topic before anyone has replied' });
+      }
     }
 
     await Promise.all([
@@ -279,8 +299,18 @@ const deleteComment = async (req, res) => {
     const comment = await Comment.findById(req.params.commentId);
     if (!comment) return res.status(404).json({ success: false, error: 'Comment not found' });
 
-    if (comment.author.toString() !== req.userId && req.userRole !== 'admin' && req.userRole !== 'head_admin') {
+    const isMod = req.userRole === 'admin' || req.userRole === 'head_admin';
+    if (comment.author.toString() !== req.userId && !isMod) {
       return res.status(403).json({ success: false, error: 'Not authorized' });
+    }
+
+    // A reply may be removed by its author only if it is the most recent in
+    // the thread (no newer replies after it). Mods may always moderate.
+    if (!isMod) {
+      const newer = await Comment.exists({ post: comment.post, createdAt: { $gt: comment.createdAt } });
+      if (newer) {
+        return res.status(403).json({ success: false, error: 'You can only delete your most recent reply' });
+      }
     }
 
     await Comment.deleteOne({ _id: comment._id });
@@ -290,4 +320,42 @@ const deleteComment = async (req, res) => {
   }
 };
 
-module.exports = { getPosts, getPost, createPost, updatePost, deletePost, getComments, createComment, deleteComment };
+const updateComment = async (req, res) => {
+  try {
+    const comment = await Comment.findById(req.params.commentId);
+    if (!comment) return res.status(404).json({ success: false, error: 'Comment not found' });
+
+    const isMod = req.userRole === 'admin' || req.userRole === 'head_admin';
+    if (comment.author.toString() !== req.userId && !isMod) {
+      return res.status(403).json({ success: false, error: 'Not authorized' });
+    }
+
+    // Authors may edit only their most recent reply in the thread.
+    if (!isMod) {
+      const newer = await Comment.exists({ post: comment.post, createdAt: { $gt: comment.createdAt } });
+      if (newer) {
+        return res.status(403).json({ success: false, error: 'You can only edit your most recent reply' });
+      }
+    }
+
+    const { content } = req.body;
+    if (!content || !content.trim()) {
+      return res.status(400).json({ success: false, error: 'Content is required' });
+    }
+
+    comment.content = sanitizeRich(content);
+    comment.isEdited = true;
+    await comment.save();
+
+    const populated = await comment.populate([
+      { path: 'character', select: 'name avatar class race level' },
+      { path: 'author', select: 'username' },
+    ]);
+
+    res.json({ success: true, data: populated });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+module.exports = { getPosts, getPost, createPost, updatePost, deletePost, getComments, createComment, updateComment, deleteComment };
