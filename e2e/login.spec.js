@@ -98,7 +98,7 @@ test.describe('Login → Character Select flow', () => {
     await page.click('.csr-action-btn');
     await page.waitForURL('**/dashboard');
 
-    await expect(page.locator('.db-hero-name')).toContainText('Aragorn');
+    await expect(page.locator('.home-banner-title')).toContainText('Realm of Aldermere');
   });
 
   test('links to /register page for new users', async ({ page }) => {
