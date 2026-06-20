@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import BgScene from '../components/layout/BgScene';
+import AuthHero from '../components/layout/AuthHero';
 
 export default function Login() {
   const location = useLocation();
@@ -34,28 +35,18 @@ export default function Login() {
     <div className="auth-split">
       <BgScene />
 
-      <aside className="auth-lore">
-        <div className="auth-lore-inner">
-          <div className="auth-lore-crest">⚔</div>
-          <h1 className="auth-lore-title">RPG Forum</h1>
-          <p className="auth-lore-tagline">Where legends are written<br />in blood and ink</p>
-          <div className="auth-lore-rule" />
-          <p className="auth-lore-body">
-            Enter a world forged from story and strife. Build your legacy,
-            forge alliances, and leave your mark upon the realm eternal.
-          </p>
-          <div className="auth-lore-glyphs">
-            <span>🏰</span><span>⚔</span><span>🔮</span><span>🐉</span>
-          </div>
-        </div>
-        <div className="auth-lore-glow" />
-      </aside>
+      <AuthHero />
 
       <main className="auth-form-side">
         <div className="auth-form-inner">
-          <div className="auth-form-eyebrow">Portal of Return</div>
-          <h2 className="auth-form-title">Enter the Realm</h2>
-          <p className="auth-form-sub">Your legend awaits beyond these gates</p>
+          <div className="auth-intro">
+            <span className="auth-intro-eyebrow">⚔ The gates remember you</span>
+            <h1 className="auth-intro-title">Welcome back,<br />champion.</h1>
+            <p className="auth-intro-lead">
+              Your saga waits exactly where you left it. Sign in and step back
+              through the gates of Aldermere.
+            </p>
+          </div>
 
           {success && <div className="auth-alert auth-alert-success">{success}</div>}
           {error   && <div className="auth-alert auth-alert-error">{error}</div>}

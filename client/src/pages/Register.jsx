@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import BgScene from '../components/layout/BgScene';
+import AuthHero from '../components/layout/AuthHero';
 
 export default function Register() {
   const [form, setForm]       = useState({ username: '', email: '', password: '' });
@@ -39,28 +40,18 @@ export default function Register() {
     <div className="auth-split">
       <BgScene />
 
-      <aside className="auth-lore">
-        <div className="auth-lore-inner">
-          <div className="auth-lore-crest">🗡</div>
-          <h1 className="auth-lore-title">RPG Forum</h1>
-          <p className="auth-lore-tagline">Carve your name into<br />the annals of history</p>
-          <div className="auth-lore-rule" />
-          <p className="auth-lore-body">
-            Every legend begins with a single choice. Step forward, traveller,
-            and claim your place among heroes and villains alike.
-          </p>
-          <div className="auth-lore-glyphs">
-            <span>⚔</span><span>🛡</span><span>📜</span><span>🔥</span>
-          </div>
-        </div>
-        <div className="auth-lore-glow" />
-      </aside>
+      <AuthHero />
 
       <main className="auth-form-side">
         <div className="auth-form-inner">
-          <div className="auth-form-eyebrow">New Arrival</div>
-          <h2 className="auth-form-title">Begin Your Legend</h2>
-          <p className="auth-form-sub">Create your account and enter the realm</p>
+          <div className="auth-intro">
+            <span className="auth-intro-eyebrow">⚔ A new chapter begins</span>
+            <h1 className="auth-intro-title">Forge your<br />destiny.</h1>
+            <p className="auth-intro-lead">
+              Every legend starts with a single strike. Create your account
+              and carve your name into the annals of Aldermere.
+            </p>
+          </div>
 
           {error && <div className="auth-alert auth-alert-error">{error}</div>}
 

@@ -1,0 +1,111 @@
+/* ===================================================================
+   AUTH (login / register) — split screen: warrior art | form
+   Overrides the legacy .auth-lore styling in globals.css.
+=================================================================== */
+
+.auth-split {
+  grid-template-columns: 47% 1fr;
+}
+
+/* ───────────────── Left: hero art ───────────────── */
+.auth-hero {
+  position: relative;
+  overflow: hidden;
+  background: #060b08;
+  border-right: none;
+}
+.auth-hero-img {
+  position: absolute; inset: 0;
+  background: url('/auth-hero.jpg') no-repeat;
+  background-size: cover;
+  background-position: 62% center;
+}
+/* tint the art toward the emerald theme + darken the seam and base */
+.auth-hero-veil {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(90deg, rgba(6,11,8,0.45) 0%, transparent 20%, transparent 66%, rgba(6,11,8,0.55) 100%),
+    radial-gradient(130% 100% at 60% 35%, transparent 45%, rgba(6,11,8,0.55) 100%),
+    linear-gradient(0deg, rgba(6,11,8,0.7) 0%, transparent 38%),
+    linear-gradient(160deg, rgba(20,60,42,0.18) 0%, transparent 50%);
+  pointer-events: none;
+}
+/* glowing rune-crack running down the dividing seam */
+.auth-hero-crack {
+  position: absolute; top: -4%; bottom: -4%; right: -3px;
+  width: 5px;
+  background: linear-gradient(to bottom,
+    transparent 0%, rgba(201,162,39,0.0) 8%,
+    var(--gold-light) 28%, var(--emerald) 48%,
+    var(--gold-light) 66%, rgba(201,162,39,0.0) 92%, transparent 100%);
+  filter: blur(1.5px);
+  box-shadow:
+    0 0 22px 3px rgba(201,162,39,0.5),
+    0 0 44px 8px rgba(31,155,102,0.32);
+  opacity: 0.92;
+  animation: authCrackPulse 4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes authCrackPulse {
+  0%, 100% { opacity: 0.8; }
+  50%      { opacity: 1; }
+}
+.auth-hero-wordmark {
+  position: absolute; left: 1.7rem; bottom: 1.5rem; z-index: 2;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  letter-spacing: 0.16em;
+  color: var(--gold-light);
+  text-shadow: 0 2px 14px rgba(0,0,0,0.85);
+}
+
+/* ───────────────── Right: form side ───────────────── */
+.auth-form-side {
+  background:
+    radial-gradient(ellipse 60% 40% at 85% 12%, rgba(201,162,39,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 45% at 15% 85%, rgba(31,155,102,0.07) 0%, transparent 60%),
+    var(--bg-dark);
+}
+.auth-form-inner { max-width: 400px; }
+
+.auth-intro { margin-bottom: 2rem; }
+.auth-intro-eyebrow {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.66rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 0.9rem;
+}
+.auth-intro-title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(1.95rem, 1.2rem + 1.7vw, 2.7rem);
+  line-height: 1.04;
+  letter-spacing: 0.015em;
+  color: var(--text);
+  text-shadow: 0 0 40px rgba(201,162,39,0.16);
+}
+.auth-intro-title::after {
+  content: '';
+  display: block;
+  width: 72px; height: 2px;
+  margin-top: 0.85rem;
+  background: linear-gradient(90deg, var(--gold), transparent);
+}
+.auth-intro-lead {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.02rem;
+  color: var(--text-soft);
+  line-height: 1.55;
+  margin-top: 0.95rem;
+  max-width: 380px;
+}
+
+@media (max-width: 768px) {
+  .auth-split { grid-template-columns: 1fr; }
+  .auth-hero  { display: none; }
+  .auth-form-side { min-height: 100vh; }
+}
