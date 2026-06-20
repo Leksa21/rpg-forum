@@ -5,10 +5,27 @@ import { get, post, del } from '../lib/api';
 import BgScene from '../components/layout/BgScene';
 import Topbar from '../components/layout/Topbar';
 import Breadcrumb from '../components/layout/Breadcrumb';
+import RichText from '../components/forum/RichText';
+import RichTextEditor from '../components/forum/RichTextEditor';
+
+const CLASS_COLORS = {
+  Warrior: '#e74c3c', Mage: '#3498db', Rogue: '#f39c12',
+  Cleric: '#f1c40f', Ranger: '#27ae60', Paladin: '#9b59b6',
+  Warlock: '#8e44ad', Bard: '#e67e22', Druid: '#16a085',
+  Necromancer: '#2c3e50',
+};
 
 function formatDate(iso) {
   if (!iso) return '';
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+// Strip tags to check whether the editor actually has text (not just markup).
+function hasText(html) {
+  if (typeof document === 'undefined') return !!html;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html || '';
+  return (tmp.textContent || '').trim().length > 0;
 }
 
 export default function PostDetail() {
@@ -18,7 +35,7 @@ export default function PostDetail() {
 
   const [postData, setPost] = useState(null);
   const [comments, setComments] = useState([]);
-  const [commentText, setCommentText] = useState('');
+  const [commentHtml, setCommentHtml] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -43,13 +60,13 @@ export default function PostDetail() {
 
   const handleComment = async (e) => {
     e.preventDefault();
-    if (!commentText.trim()) return;
+    if (!hasText(commentHtml)) return;
     setCommentError('');
     setSubmitting(true);
     try {
-      const res = await post(`/api/posts/${id}/comments`, { content: commentText.trim() }, token);
+      const res = await post(`/api/posts/${id}/comments`, { content: commentHtml }, token);
       setComments(prev => [...prev, res.data]);
-      setCommentText('');
+      setCommentHtml('');
     } catch (err) {
       setCommentError(err.message);
     } finally {
@@ -58,7 +75,7 @@ export default function PostDetail() {
   };
 
   const handleDeletePost = async () => {
-    if (!confirm('Delete this post and all comments?')) return;
+    if (!confirm('Delete this topic and all replies?')) return;
     try {
       await del(`/api/posts/${id}`, token);
       navigate('/forum');
@@ -105,132 +122,101 @@ export default function PostDetail() {
     </>
   );
 
+  const crumbs = postData.location ? [
+    { label: '🗺 Map', to: '/map' },
+    { label: postData.location.name, to: `/world/areas/${postData.location._id}` },
+    postData.subLocation && { label: postData.subLocation.name, to: `/world/areas/${postData.location._id}/venue/${postData.subLocation._id}` },
+    { label: postData.title },
+  ] : [
+    { label: 'Off-Topic', to: '/forum' },
+    { label: postData.title },
+  ];
+
   return (
     <>
       <BgScene />
       <div className="dashboard">
         <Topbar />
-        <main className="dash-main">
+        <main className="dash-main thread-main">
 
-          <Breadcrumb items={postData.location ? [
-            { label: '🗺 Map', to: '/map' },
-            { label: postData.location.name, to: `/world/areas/${postData.location._id}` },
-            postData.subLocation && { label: postData.subLocation.name, to: `/world/areas/${postData.location._id}/venue/${postData.subLocation._id}` },
-            { label: postData.title },
-          ] : [
-            { label: 'Off-Topic', to: '/forum' },
-            { label: postData.title },
-          ]} />
+          <Breadcrumb items={crumbs} />
 
-          {/* Post */}
-          <article className="post-article">
-            <header className="post-art-header">
-              <div className="post-art-meta">
-                <span className="post-cat-badge">{postData.category}</span>
-                {postData.isPinned && <span className="post-pin-badge">📌 Pinned</span>}
-                {postData.isLocked && <span className="post-lock-badge">🔒 Locked</span>}
-              </div>
-              <h1 className="post-art-title">{postData.title}</h1>
-              <div className="post-art-by">
-                <span className="post-char-avatar">{postData.character?.avatar || '⚔️'}</span>
-                <div>
-                  {postData.character?._id ? (
-                    <Link to={`/character/${postData.character._id}`} className="post-char-name post-char-link">
-                      {postData.character.name}
-                    </Link>
-                  ) : (
-                    <span className="post-char-name">{postData.character?.name}</span>
-                  )}
-                  {postData.character?.class && (
-                    <span className="post-char-class"> · {postData.character.race} {postData.character.class} · Lv.{postData.character.level}</span>
-                  )}
-                  <div className="post-art-date">{formatDate(postData.createdAt)} · {postData.views} views</div>
-                </div>
-              </div>
-            </header>
-
-            <div className="post-art-content">
-              {postData.content.split('\n').map((line, i) => (
-                <p key={i}>{line || <br />}</p>
-              ))}
+          {/* Topic header — title + description only, no author identity */}
+          <header className="thread-head">
+            <div className="thread-head-badges">
+              <span className="post-cat-badge">{postData.category}</span>
+              {postData.isPinned && <span className="post-pin-badge">📌 Pinned</span>}
+              {postData.isLocked && <span className="post-lock-badge">🔒 Locked</span>}
             </div>
-
+            <h1 className="thread-title">{postData.title}</h1>
+            <RichText className="thread-desc" html={postData.content} />
             {postData.tags?.length > 0 && (
               <div className="post-art-tags">
                 {postData.tags.map(t => <span key={t} className="forum-tag">{t}</span>)}
               </div>
             )}
-
             {(isAuthor || isAdmin) && (
-              <div className="post-art-actions">
-                <button className="post-delete-btn" onClick={handleDeletePost}>Delete Post</button>
+              <div className="thread-head-actions">
+                <button className="post-delete-btn" onClick={handleDeletePost}>Delete topic</button>
               </div>
             )}
-          </article>
+          </header>
 
-          {/* Comments */}
-          <section className="comments-section">
-            <h2 className="comments-heading">
-              {comments.length === 0 ? 'No replies yet' : `${comments.length} ${comments.length === 1 ? 'Reply' : 'Replies'}`}
-            </h2>
-
-            <div className="comments-list">
-              {comments.map(c => (
-                <div key={c._id} className="comment-row">
-                  <div className="comment-avatar">{c.character?.avatar || '⚔️'}</div>
-                  <div className="comment-body">
-                    <div className="comment-header">
-                      {c.character?._id ? (
-                        <Link to={`/character/${c.character._id}`} className="comment-char-name comment-char-link">
-                          {c.character.name}
-                        </Link>
-                      ) : (
-                        <span className="comment-char-name">{c.character?.name || 'Unknown'}</span>
-                      )}
-                      {c.character?.class && (
-                        <span className="comment-char-class"> · {c.character.race} {c.character.class}</span>
-                      )}
-                      <span className="comment-date">{formatDate(c.createdAt)}</span>
+          {/* Replies — two columns: text left, character profile right */}
+          <section className="reply-list">
+            {comments.map(c => {
+              const cc = CLASS_COLORS[c.character?.class] || 'var(--gold)';
+              return (
+                <article key={c._id} className="reply">
+                  <div className="reply-text">
+                    <RichText html={c.content} />
+                    <div className="reply-foot">
+                      <span className="reply-date">{formatDate(c.createdAt)}</span>
                       {(user?._id === c.author?._id || isAdmin) && (
-                        <button className="comment-del-btn" onClick={() => handleDeleteComment(c._id)}>×</button>
+                        <button className="reply-del" onClick={() => handleDeleteComment(c._id)}>Delete</button>
                       )}
                     </div>
-                    <p className="comment-text">{c.content}</p>
                   </div>
-                </div>
-              ))}
-            </div>
 
-            {/* Reply form */}
-            {token && character ? (
-              postData.isLocked ? (
-                <div className="comment-locked">🔒 This thread is locked. No new replies.</div>
-              ) : (
-                <form className="comment-form" onSubmit={handleComment}>
-                  <div className="comment-form-by">
-                    <span>{character.avatar || '⚔️'}</span>
-                    <span>{character.name} · {character.race} {character.class}</span>
-                  </div>
-                  <textarea
-                    className="comment-textarea"
-                    value={commentText}
-                    onChange={e => setCommentText(e.target.value)}
-                    placeholder="Write your reply in character…"
-                    rows={4}
-                    maxLength={5000}
-                  />
-                  {commentError && <div className="alert error visible">{commentError}</div>}
-                  <button className="btn-primary" type="submit" disabled={submitting || !commentText.trim()}>
+                  <aside className="reply-profile" style={{ '--cc': cc }}>
+                    <div className="reply-avatar">{c.character?.avatar || '⚔️'}</div>
+                    {c.character?._id ? (
+                      <Link to={`/character/${c.character._id}`} className="reply-name">{c.character?.name}</Link>
+                    ) : (
+                      <span className="reply-name">{c.character?.name || 'Unknown'}</span>
+                    )}
+                    {c.character?.class && <div className="reply-class">{c.character.race} {c.character.class}</div>}
+                    {c.character?.level != null && <div className="reply-level">Level {c.character.level}</div>}
+                  </aside>
+                </article>
+              );
+            })}
+          </section>
+
+          {/* Compose */}
+          {token && character ? (
+            postData.isLocked ? (
+              <div className="comment-locked">🔒 This thread is locked. No new replies.</div>
+            ) : (
+              <form className="reply-compose" onSubmit={handleComment}>
+                <div className="reply-compose-as">
+                  <span className="reply-compose-avatar">{character.avatar || '⚔️'}</span>
+                  <span>Replying as <strong>{character.name}</strong> · {character.race} {character.class}</span>
+                </div>
+                <RichTextEditor value={commentHtml} onChange={setCommentHtml} placeholder="Write your reply in character…" />
+                {commentError && <div className="alert error visible">{commentError}</div>}
+                <div className="reply-compose-actions">
+                  <button className="btn-primary" type="submit" disabled={submitting || !hasText(commentHtml)}>
                     {submitting ? 'Posting…' : 'Post Reply'}
                   </button>
-                </form>
-              )
-            ) : token && !character ? (
-              <div className="comment-locked">You need an active character to reply.</div>
-            ) : (
-              <div className="comment-locked"><Link to="/login">Log in</Link> to reply.</div>
-            )}
-          </section>
+                </div>
+              </form>
+            )
+          ) : token && !character ? (
+            <div className="comment-locked">You need an active character to reply.</div>
+          ) : (
+            <div className="comment-locked"><Link to="/login">Log in</Link> to reply.</div>
+          )}
 
         </main>
       </div>

@@ -4,6 +4,7 @@ const Character = require('../models/Character');
 const Location = require('../models/Location');
 const { canViewCity, canPostInCity, canOpenThread, isStaffRole } = require('../utils/visibility');
 const { resolveCurrentCityId } = require('../utils/presence');
+const { sanitizeRich } = require('../utils/sanitizeContent');
 const SubLocation = require('../models/SubLocation');
 
 const getPosts = async (req, res) => {
@@ -139,7 +140,7 @@ const createPost = async (req, res) => {
 
     const post = await Post.create({
       title: title.trim(),
-      content: content.trim(),
+      content: sanitizeRich(content),
       category,
       tags: tags || [],
       author: req.userId,
@@ -170,7 +171,7 @@ const updatePost = async (req, res) => {
 
     const { title, content, tags, isPinned, isLocked } = req.body;
     if (title) post.title = title.trim();
-    if (content) post.content = content.trim();
+    if (content) post.content = sanitizeRich(content);
     if (tags) post.tags = tags;
 
     if ((req.userRole === 'admin' || req.userRole === 'head_admin' || req.userRole === 'moderator')) {
@@ -256,7 +257,7 @@ const createComment = async (req, res) => {
     }
 
     const comment = await Comment.create({
-      content: content.trim(),
+      content: sanitizeRich(content),
       author: req.userId,
       character: character._id,
       post: req.params.id,
