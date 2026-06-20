@@ -11,6 +11,7 @@ const {
   getPublicCharacter,
   getActiveCharacters,
   discoverLocation,
+  moveVenue,
 } = require('../controllers/characterController');
 
 router.get('/all',    protect, getAllMyCharacters);
@@ -21,6 +22,7 @@ router.put('/setup',     protect, setupCharacter);
 router.put('/backstory', protect, updateBackstory);
 router.put('/profile',   protect, updateProfile);
 router.post('/discover', protect, discoverLocation);
+router.post('/move-venue', protect, moveVenue);
 router.get('/:id',                getPublicCharacter);
 
 module.exports = router;

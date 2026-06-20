@@ -1,5 +1,7 @@
 const Character = require('../models/Character');
 
+const VENUE_MOVE_SECS = 10;
+
 const getMyCharacter = async (req, res) => {
   try {
     const character = await Character.findOneAndUpdate(
@@ -8,7 +10,8 @@ const getMyCharacter = async (req, res) => {
       { new: true },
     )
       .populate('discoveredLocations', 'name icon mapCoords')
-      .populate('currentLocation', 'name icon');
+      .populate('currentLocation', 'name icon')
+      .populate('currentVenue', 'name icon');
     if (!character) {
       return res.status(404).json({ success: false, error: 'No character found' });
     }
@@ -46,6 +49,42 @@ const discoverLocation = async (req, res) => {
     );
 
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// Move within the current city to a venue. Takes ~10s (a light walk) so players
+// can't teleport-spam between rooms. Position only; forum visibility is by city.
+const moveVenue = async (req, res) => {
+  try {
+    const { venueId } = req.body;
+    const character = await Character.findOne({ owner: req.userId, isDead: false });
+    if (!character) return res.status(404).json({ success: false, error: 'No character' });
+
+    if (!venueId) {
+      character.currentVenue = null;
+      character.venueArrivalAt = null;
+      await character.save();
+      return res.json({ success: true, data: { currentVenue: null, venueArrivalAt: null } });
+    }
+
+    const SubLocation = require('../models/SubLocation');
+    const Location = require('../models/Location');
+    const venue = await SubLocation.findById(venueId).select('city');
+    if (!venue) return res.status(404).json({ success: false, error: 'Venue not found' });
+
+    const cityId = character.currentLocation
+      || (await Location.findOne({ isStartingLocation: true }).select('_id'))?._id;
+    if (!cityId || String(venue.city) !== String(cityId)) {
+      return res.status(403).json({ success: false, error: 'That place is not in your city' });
+    }
+
+    character.currentVenue = venueId;
+    character.venueArrivalAt = new Date(Date.now() + VENUE_MOVE_SECS * 1000);
+    await character.save();
+
+    res.json({ success: true, data: { currentVenue: venueId, venueArrivalAt: character.venueArrivalAt } });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -164,4 +203,4 @@ const updateBackstory = async (req, res) => {
   }
 };
 
-module.exports = { getMyCharacter, getAllMyCharacters, createCharacter, setupCharacter, updateBackstory, updateProfile, getPublicCharacter, getActiveCharacters, discoverLocation };
+module.exports = { getMyCharacter, getAllMyCharacters, createCharacter, setupCharacter, updateBackstory, updateProfile, getPublicCharacter, getActiveCharacters, discoverLocation, moveVenue };

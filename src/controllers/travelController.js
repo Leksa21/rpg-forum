@@ -81,7 +81,12 @@ const getActiveTravel = async (req, res) => {
     if (new Date() >= travel.arrivalTime) {
       travel.status = 'arrived';
       await travel.save();
-      await Character.findByIdAndUpdate(character._id, { currentLocation: travel.to });
+      // Arriving in a new city drops you at its gates — clear venue position.
+      await Character.findByIdAndUpdate(character._id, {
+        currentLocation: travel.to,
+        currentVenue: null,
+        venueArrivalAt: null,
+      });
     }
 
     res.json({ success: true, data: travel });

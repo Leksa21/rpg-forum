@@ -109,6 +109,18 @@ const characterSchema = new mongoose.Schema(
       ref: 'Location',
       default: null,
     },
+    // Where the character stands within the current city (for the city map).
+    // Does not affect forum visibility (that is city-level); purely positional.
+    currentVenue: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'SubLocation',
+      default: null,
+    },
+    // While in the future, the character is "walking" to currentVenue (~10s).
+    venueArrivalAt: {
+      type: Date,
+      default: null,
+    },
     discoveredLocations: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Location',

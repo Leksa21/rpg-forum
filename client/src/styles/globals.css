@@ -3195,6 +3195,88 @@ a.db-hero-name:hover {
 .reply-edit:hover { opacity: 1; }
 .reply-edited { color: var(--text-muted); font-style: italic; }
 
+/* ── City / place map ─────────────────────────────────────── */
+.view-toggle {
+  display: inline-flex;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.view-toggle button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  padding: 0.35rem 0.9rem;
+  transition: background 140ms ease, color 140ms ease;
+}
+.view-toggle button.active {
+  background: rgba(201, 168, 76, 0.16);
+  color: var(--gold, #c9a84c);
+}
+
+.pm-wrap { position: relative; margin-top: 0.4rem; }
+.pm-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 1px solid rgba(201, 168, 76, 0.14);
+  border-radius: 18px;
+}
+
+.pm-node { cursor: pointer; }
+.pm-disc { transition: transform 140ms ease; transform-box: fill-box; transform-origin: center; }
+.pm-node:hover .pm-disc { transform: scale(1.14); }
+.pm-icon { font-size: 24px; }
+.pm-plate {
+  fill: rgba(10, 12, 20, 0.82);
+  stroke: rgba(201, 168, 76, 0.25);
+  stroke-width: 1;
+}
+.pm-label { font-family: 'Cinzel', serif; font-size: 13px; font-weight: 600; }
+.pm-enter { font-size: 16px; opacity: 0.7; }
+.pm-here-ring { transform-box: fill-box; transform-origin: center; animation: pmPulse 2s ease-in-out infinite; }
+@keyframes pmPulse {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(1.12); }
+}
+.pm-walker { pointer-events: none; }
+
+.pm-walk-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(6, 8, 14, 0.5);
+  border-radius: 18px;
+}
+.pm-walk-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1.4rem 2rem;
+  border: 1px solid rgba(201, 168, 76, 0.3);
+  border-radius: 16px;
+  background: rgba(14, 16, 26, 0.95);
+}
+.pm-walk-icon { font-size: 2rem; }
+.pm-walk-text { font-family: 'Crimson Text', serif; color: var(--text); }
+.pm-walk-secs { font-family: 'Cinzel', serif; font-size: 1.6rem; color: var(--gold, #c9a84c); }
+.pm-walk-cancel {
+  margin-top: 0.3rem;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: var(--text-muted);
+  padding: 0.3rem 0.9rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.pm-walk-cancel:hover { color: var(--text); border-color: rgba(255, 255, 255, 0.3); }
+
 /* ── Breadcrumb ───────────────────────────────────────────── */
 .breadcrumb {
   display: flex;

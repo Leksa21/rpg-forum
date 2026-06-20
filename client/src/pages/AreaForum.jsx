@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { get } from '../lib/api';
+import { get, post } from '../lib/api';
+import { toId } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
 import BgScene from '../components/layout/BgScene';
 import Topbar from '../components/layout/Topbar';
 import Breadcrumb from '../components/layout/Breadcrumb';
 import TravelPanel from '../components/travel/TravelPanel';
+import PlaceMap from '../components/citymap/PlaceMap';
 
 const CLASS_COLORS = {
   Warrior: '#e74c3c', Mage: '#3498db', Rogue: '#f39c12',
@@ -25,7 +27,8 @@ function timeAgo(date) {
 export default function AreaForum() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { token, user } = useAuth();
+  const { token, user, character, refreshCharacter } = useAuth();
+  const [venueView, setVenueView] = useState('map');
 
   const [location, setLocation] = useState(null);
   const [venues, setVenues]     = useState([]);
@@ -88,6 +91,29 @@ export default function AreaForum() {
   const isStaff = ['moderator', 'admin', 'head_admin'].includes(user?.role);
   const canWrite = isStaff || Boolean(location.allowPlayerThreads);
 
+  // City-map nodes (districts) + which one the character currently stands in.
+  const mapNodes = topVenues.map(v => ({
+    _id: v._id, name: v.name, icon: v.icon, description: v.description,
+    hasChildren: venues.some(c => toId(c.parent) === toId(v._id)),
+  }));
+  const currentVenueId = toId(character?.currentVenue);
+  const topAncestorId = (vid) => {
+    if (!vid) return null;
+    let cur = venues.find(v => toId(v._id) === vid);
+    while (cur && cur.parent) {
+      const p = venues.find(v => toId(v._id) === toId(cur.parent));
+      if (!p) break;
+      cur = p;
+    }
+    return cur ? toId(cur._id) : null;
+  };
+  const activeChildId = topAncestorId(currentVenueId);
+  const openContainer = (node) => navigate(`/world/areas/${id}/venue/${node._id}`);
+  const startVenueWalk = (node) => {
+    post('/api/characters/move-venue', { venueId: node._id }, token).then(() => refreshCharacter?.()).catch(() => {});
+  };
+  const arriveLeaf = (node) => navigate(`/world/areas/${id}/venue/${node._id}`);
+
   return (
     <>
       <BgScene />
@@ -131,22 +157,40 @@ export default function AreaForum() {
               <>
                 {topVenues.length > 0 && (
                   <section className="af-section">
-                    <h2 className="af-section-label">⌖ Where to go</h2>
-                    <div className="af-venue-grid">
-                      {topVenues.map(v => (
-                        <button
-                          key={v._id}
-                          className="af-venue-card"
-                          style={{ '--accent': accent }}
-                          onClick={() => navigate(`/world/areas/${id}/venue/${v._id}`)}
-                        >
-                          <span className="af-venue-icon">{v.icon}</span>
-                          <span className="af-venue-name">{v.name}</span>
-                          {v.description && <span className="af-venue-desc">{v.description}</span>}
-                          <span className="af-venue-go">Enter →</span>
-                        </button>
-                      ))}
+                    <div className="af-section-head">
+                      <h2 className="af-section-label">⌖ Where to go</h2>
+                      <div className="view-toggle">
+                        <button className={venueView === 'map' ? 'active' : ''} onClick={() => setVenueView('map')}>🗺 Map</button>
+                        <button className={venueView === 'list' ? 'active' : ''} onClick={() => setVenueView('list')}>☰ List</button>
+                      </div>
                     </div>
+
+                    {venueView === 'map' ? (
+                      <PlaceMap
+                        nodes={mapNodes}
+                        accent={accent}
+                        activeChildId={activeChildId}
+                        onOpenContainer={openContainer}
+                        onStartWalk={startVenueWalk}
+                        onArriveLeaf={arriveLeaf}
+                      />
+                    ) : (
+                      <div className="af-venue-grid">
+                        {topVenues.map(v => (
+                          <button
+                            key={v._id}
+                            className="af-venue-card"
+                            style={{ '--accent': accent }}
+                            onClick={() => navigate(`/world/areas/${id}/venue/${v._id}`)}
+                          >
+                            <span className="af-venue-icon">{v.icon}</span>
+                            <span className="af-venue-name">{v.name}</span>
+                            {v.description && <span className="af-venue-desc">{v.description}</span>}
+                            <span className="af-venue-go">Enter →</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </section>
                 )}
 
