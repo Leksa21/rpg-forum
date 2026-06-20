@@ -3370,6 +3370,132 @@ a.db-hero-name:hover {
 .notif-text em { color: var(--text-muted); font-style: italic; }
 .notif-time { flex: none; font-size: 0.7rem; color: var(--text-muted); }
 
+/* ── NPC panel + dialogue ─────────────────────────────────── */
+.npc-panel {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.2rem;
+  margin-bottom: 1.4rem;
+  border: 1px solid color-mix(in oklab, var(--accent, #c9a84c) 28%, rgba(255, 255, 255, 0.06));
+  border-radius: 14px;
+  background:
+    radial-gradient(120% 80% at 0% 0%, color-mix(in oklab, var(--accent, #c9a84c) 12%, transparent), transparent 60%),
+    linear-gradient(180deg, rgba(20, 20, 34, 0.7), rgba(12, 12, 20, 0.8));
+}
+.npc-avatar {
+  flex: none;
+  width: 3rem; height: 3rem;
+  display: grid; place-items: center;
+  font-size: 1.8rem;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--accent, #c9a84c) 40%, transparent);
+  background: color-mix(in oklab, var(--accent, #c9a84c) 10%, transparent);
+}
+.npc-info { flex: 1; min-width: 0; }
+.npc-name { font-family: 'Cinzel', serif; color: var(--accent, #c9a84c); font-size: 1.05rem; }
+.npc-role { font-size: 0.8rem; color: var(--text-muted); }
+.npc-persona { font-family: 'Crimson Text', serif; color: var(--text-muted); font-size: 0.9rem; margin: 0.25rem 0 0; font-style: italic; }
+.npc-talk {
+  flex: none;
+  padding: 0.5rem 1.1rem;
+  border: 1px solid color-mix(in oklab, var(--accent, #c9a84c) 50%, transparent);
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--accent, #c9a84c) 12%, transparent);
+  color: var(--accent, #c9a84c);
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  font-size: 0.85rem;
+  transition: background 140ms ease;
+}
+.npc-talk:hover { background: color-mix(in oklab, var(--accent, #c9a84c) 22%, transparent); }
+
+.npc-overlay {
+  position: fixed; inset: 0; z-index: 80;
+  display: grid; place-items: center;
+  padding: 1rem;
+  background: rgba(5, 6, 12, 0.66);
+}
+.npc-dialog {
+  width: 540px; max-width: 100%;
+  display: flex; flex-direction: column;
+  border: 1px solid color-mix(in oklab, var(--accent, #c9a84c) 30%, rgba(255, 255, 255, 0.1));
+  border-radius: 16px;
+  background: rgba(14, 15, 24, 0.98);
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.9);
+  overflow: hidden;
+}
+.npc-dialog-head {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.9rem 1.1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+.npc-dialog-avatar { font-size: 1.8rem; }
+.npc-dialog-id { flex: 1; }
+.npc-close { background: none; border: none; color: var(--text-muted); font-size: 1.6rem; cursor: pointer; line-height: 1; }
+.npc-close:hover { color: var(--text); }
+
+.npc-log { padding: 1.1rem; display: flex; flex-direction: column; gap: 0.7rem; max-height: 46vh; overflow-y: auto; }
+.npc-line { display: flex; align-items: flex-end; gap: 0.5rem; max-width: 85%; }
+.npc-line--npc { align-self: flex-start; }
+.npc-line--you { align-self: flex-end; flex-direction: row-reverse; }
+.npc-line-av { font-size: 1.3rem; }
+.npc-bubble {
+  padding: 0.6rem 0.9rem; border-radius: 12px;
+  font-family: 'Crimson Text', serif; font-size: 1rem; line-height: 1.45;
+}
+.npc-line--npc .npc-bubble {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom-left-radius: 3px;
+  color: var(--text);
+}
+.npc-line--you .npc-bubble {
+  background: color-mix(in oklab, var(--accent, #c9a84c) 16%, transparent);
+  border: 1px solid color-mix(in oklab, var(--accent, #c9a84c) 30%, transparent);
+  border-bottom-right-radius: 3px;
+  color: var(--text);
+}
+.npc-topics {
+  display: flex; flex-wrap: wrap; gap: 0.5rem;
+  padding: 0.9rem 1.1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+.npc-topic {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid color-mix(in oklab, var(--accent, #c9a84c) 35%, transparent);
+  border-radius: 999px;
+  background: none; color: var(--accent, #c9a84c); cursor: pointer;
+  font-family: 'Crimson Text', serif; font-size: 0.9rem;
+  transition: background 140ms ease;
+}
+.npc-topic:hover { background: color-mix(in oklab, var(--accent, #c9a84c) 14%, transparent); }
+.npc-no-topics { color: var(--text-muted); font-style: italic; }
+.npc-leave { margin-left: auto; background: none; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 999px; color: var(--text-muted); padding: 0.4rem 0.9rem; cursor: pointer; font-size: 0.85rem; }
+.npc-leave:hover { color: var(--text); }
+.npc-future { padding: 0.5rem 1.1rem 0.8rem; font-size: 0.72rem; color: var(--text-muted); text-align: center; font-style: italic; }
+
+/* NPC admin editor */
+.npc-edit {
+  width: 620px; max-width: 100%;
+  max-height: 88vh; overflow-y: auto;
+  padding: 1.4rem;
+  border: 1px solid rgba(201, 168, 76, 0.25);
+  border-radius: 16px;
+  background: rgba(16, 16, 26, 0.99);
+}
+.npc-edit-check { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; cursor: pointer; color: var(--text); }
+.npc-edit-topics { margin-top: 1rem; }
+.npc-edit-topics-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; color: var(--text-muted); font-size: 0.9rem; }
+.npc-edit-topic {
+  display: grid; grid-template-columns: 1fr auto; gap: 0.5rem;
+  align-items: start;
+  margin-bottom: 0.7rem; padding: 0.7rem; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 10px;
+}
+.npc-edit-topic input { grid-column: 1 / -1; }
+.npc-edit-topic textarea { grid-column: 1; }
+.npc-edit-topic .reply-del { grid-column: 2; align-self: center; }
+
 /* ── Breadcrumb ───────────────────────────────────────────── */
 .breadcrumb {
   display: flex;

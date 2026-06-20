@@ -1,5 +1,25 @@
 const mongoose = require('mongoose');
 
+// One scripted NPC per venue. `persona` is flavor now and becomes the AI
+// context when we later swap clickable topics for a live model — the rest of
+// the shape stays the same.
+const npcTopicSchema = new mongoose.Schema(
+  { label: { type: String, default: '' }, response: { type: String, default: '' } },
+  { _id: false }
+);
+const npcSchema = new mongoose.Schema(
+  {
+    enabled: { type: Boolean, default: false },
+    name: { type: String, default: '' },
+    role: { type: String, default: '' },
+    avatar: { type: String, default: '🧑' },
+    persona: { type: String, default: '' },
+    greeting: { type: String, default: '' },
+    topics: { type: [npcTopicSchema], default: [] },
+  },
+  { _id: false }
+);
+
 const subLocationSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -31,6 +51,8 @@ const subLocationSchema = new mongoose.Schema(
     isAccessible: { type: Boolean, default: true },
     npcName: { type: String, default: null },
     npcRole: { type: String, default: null },
+    // Interactive NPC (one per venue). Drives the "Speak with…" panel.
+    npc: { type: npcSchema, default: () => ({}) },
   },
   { timestamps: true }
 );

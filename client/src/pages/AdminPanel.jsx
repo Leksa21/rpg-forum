@@ -429,6 +429,8 @@ function VenueManager({ token }) {
   const [form, setForm]           = useState(EMPTY_VENUE);
   const [saving, setSaving]       = useState(false);
   const [msg, setMsg]             = useState('');
+  const [npcVenue, setNpcVenue]   = useState(null);
+  const [npcForm, setNpcForm]     = useState(null);
 
   useEffect(() => {
     get('/api/world/locations')
@@ -491,6 +493,33 @@ function VenueManager({ token }) {
     }
   };
 
+  const openNpc = (v) => {
+    setNpcVenue(v);
+    setNpcForm({
+      enabled: v.npc?.enabled ?? false,
+      name: v.npc?.name || v.npcName || '',
+      role: v.npc?.role || v.npcRole || '',
+      avatar: v.npc?.avatar || '🧑',
+      greeting: v.npc?.greeting || '',
+      persona: v.npc?.persona || '',
+      topics: (v.npc?.topics || []).map(t => ({ label: t.label, response: t.response })),
+    });
+  };
+  const closeNpc = () => { setNpcVenue(null); setNpcForm(null); };
+  const saveNpc = async () => {
+    try {
+      await put(`/api/world/sublocations/${npcVenue._id}`, { npc: npcForm }, token);
+      setMsg('NPC saved!');
+      closeNpc();
+      refresh();
+    } catch (err) {
+      setMsg(err.message);
+    }
+  };
+  const setTopic = (i, key, val) => setNpcForm(f => ({ ...f, topics: f.topics.map((t, j) => (j === i ? { ...t, [key]: val } : t)) }));
+  const addTopic = () => setNpcForm(f => ({ ...f, topics: [...f.topics, { label: '', response: '' }] }));
+  const removeTopic = (i) => setNpcForm(f => ({ ...f, topics: f.topics.filter((_, j) => j !== i) }));
+
   // Group by parent so the list renders as an indented tree.
   const byParent = {};
   venues.forEach(v => {
@@ -506,13 +535,11 @@ function VenueManager({ token }) {
           <span>{v.name}</span>
           <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{v.type}</span>
           {v.allowPlayerThreads && <span title="Players may open threads" style={{ color: 'var(--gold)', fontSize: '0.7rem' }}>· open</span>}
-          <button
-            className="pm-ban-btn pm-ban-btn-ban"
-            style={{ marginLeft: 'auto' }}
-            onClick={() => handleDelete(v._id)}
-          >
-            Delete
-          </button>
+          {v.npc?.enabled && <span title="Has an NPC" style={{ fontSize: '0.7rem' }}>· 🧑</span>}
+          <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: '0.4rem' }}>
+            <button className="post-edit-btn" style={{ padding: '0.2rem 0.7rem', fontSize: '0.78rem' }} onClick={() => openNpc(v)}>NPC</button>
+            <button className="pm-ban-btn pm-ban-btn-ban" onClick={() => handleDelete(v._id)}>Delete</button>
+          </span>
         </div>
         {renderTree(v._id.toString(), depth + 1)}
       </div>
@@ -593,6 +620,47 @@ function VenueManager({ token }) {
             : <div className="admin-location-list">{renderTree('root', 0)}</div>
         }
       </div>
+
+      {npcForm && (
+        <div className="npc-overlay" onClick={closeNpc}>
+          <div className="npc-edit" onClick={e => e.stopPropagation()}>
+            <h3 className="db-section-title" style={{ marginTop: 0 }}>NPC — {npcVenue?.name}</h3>
+
+            <label className="npc-edit-check">
+              <input type="checkbox" checked={npcForm.enabled} onChange={e => setNpcForm(f => ({ ...f, enabled: e.target.checked }))} style={{ width: 'auto' }} />
+              Enabled — show “Speak with…” on this venue
+            </label>
+
+            <div className="admin-form-grid">
+              <div className="form-group"><label>Name</label><input value={npcForm.name} onChange={e => setNpcForm(f => ({ ...f, name: e.target.value }))} /></div>
+              <div className="form-group"><label>Role</label><input value={npcForm.role} onChange={e => setNpcForm(f => ({ ...f, role: e.target.value }))} /></div>
+              <div className="form-group"><label>Avatar (emoji)</label><input value={npcForm.avatar} maxLength={4} onChange={e => setNpcForm(f => ({ ...f, avatar: e.target.value }))} /></div>
+            </div>
+            <div className="form-group"><label>Greeting <span className="form-label-opt">(first line they say)</span></label><textarea rows={2} value={npcForm.greeting} onChange={e => setNpcForm(f => ({ ...f, greeting: e.target.value }))} /></div>
+            <div className="form-group"><label>Persona <span className="form-label-opt">(personality/notes — flavor now, AI context later)</span></label><textarea rows={2} value={npcForm.persona} onChange={e => setNpcForm(f => ({ ...f, persona: e.target.value }))} /></div>
+
+            <div className="npc-edit-topics">
+              <div className="npc-edit-topics-head">
+                <span>Topics — what players can ask</span>
+                <button type="button" className="btn-secondary" style={{ width: 'auto', padding: '0.3rem 0.8rem' }} onClick={addTopic}>+ Topic</button>
+              </div>
+              {npcForm.topics.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No topics yet — add one.</p>}
+              {npcForm.topics.map((t, i) => (
+                <div key={i} className="npc-edit-topic">
+                  <input placeholder="Question / topic" value={t.label} onChange={e => setTopic(i, 'label', e.target.value)} />
+                  <textarea placeholder="NPC's answer" rows={2} value={t.response} onChange={e => setTopic(i, 'response', e.target.value)} />
+                  <button type="button" className="reply-del" onClick={() => removeTopic(i)}>Remove</button>
+                </div>
+              ))}
+            </div>
+
+            <div className="edit-actions">
+              <button type="button" className="btn-secondary" onClick={closeNpc}>Cancel</button>
+              <button type="button" className="btn-primary" onClick={saveNpc}>Save NPC</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

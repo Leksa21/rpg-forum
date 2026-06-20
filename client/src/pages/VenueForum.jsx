@@ -7,6 +7,7 @@ import BgScene from '../components/layout/BgScene';
 import Topbar from '../components/layout/Topbar';
 import Breadcrumb from '../components/layout/Breadcrumb';
 import PlaceMap from '../components/citymap/PlaceMap';
+import NpcPanel from '../components/npc/NpcPanel';
 
 const CLASS_COLORS = {
   Warrior: '#e74c3c', Mage: '#3498db', Rogue: '#f39c12',
@@ -163,6 +164,8 @@ export default function VenueForum() {
               </div>
             ) : (
               <>
+                <NpcPanel npc={venue?.npc} accent={accent} />
+
                 {children.length > 0 && (
                   <section className="af-section">
                     <div className="af-section-head">

@@ -98,6 +98,29 @@ const createSubLocation = async (req, res) => {
   }
 };
 
+// Admin: update a venue (including its NPC). Only known fields are accepted.
+const updateSubLocation = async (req, res) => {
+  try {
+    const ALLOWED = [
+      'name', 'type', 'parent', 'description', 'lore', 'image', 'icon',
+      'order', 'allowPlayerThreads', 'isAccessible', 'npcName', 'npcRole', 'npc',
+    ];
+    const update = {};
+    for (const key of ALLOWED) {
+      if (key in req.body) update[key] = req.body[key];
+    }
+
+    const sub = await SubLocation.findByIdAndUpdate(req.params.id, update, {
+      new: true,
+      runValidators: true,
+    });
+    if (!sub) return res.status(404).json({ success: false, error: 'Venue not found' });
+    res.json({ success: true, data: sub });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 // Admin: delete a venue. Refuses if it still has sub-venues or threads, so an
 // admin must clear it deliberately rather than mass-deleting content by accident.
 const deleteSubLocation = async (req, res) => {
@@ -127,5 +150,5 @@ const deleteSubLocation = async (req, res) => {
 
 module.exports = {
   getRegions, getLocations, getLocation, getSubLocations, getVenues,
-  createLocation, createSubLocation, deleteSubLocation,
+  createLocation, createSubLocation, updateSubLocation, deleteSubLocation,
 };

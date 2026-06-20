@@ -145,7 +145,25 @@ const seed = async () => {
   ]);
 
   const [gildedStag, , cathedral, grandBazaar] = await SubLocation.insertMany([
-    { name: 'The Gilded Stag',   type: 'tavern',     city: dawnhold._id, parent: lowerQuarter._id,  icon: '🍺', allowPlayerThreads: true, description: 'Where knights, merchants, and liars share the same long tables.', npcName: 'Maren', npcRole: 'Innkeeper' },
+    {
+      name: 'The Gilded Stag', type: 'tavern', city: dawnhold._id, parent: lowerQuarter._id, icon: '🍺',
+      allowPlayerThreads: true, description: 'Where knights, merchants, and liars share the same long tables.',
+      npcName: 'Maren', npcRole: 'Innkeeper',
+      npc: {
+        enabled: true,
+        name: 'Maren',
+        role: 'Innkeeper of the Gilded Stag',
+        avatar: '🍷',
+        persona: 'A broad, sharp-eyed woman who has poured drinks for three kings\' worth of soldiers and forgets nothing she hears.',
+        greeting: 'Well met, traveler. Pull up a stool — the fire\'s warm and the ale\'s honest. What can Maren do for you?',
+        topics: [
+          { label: 'Any rooms to let?', response: 'Aye, three cots in the Snug out back. A copper a night, two for the corner with the shutter. Pay up front, mind — the Stag\'s seen enough morning-flits to last a lifetime.' },
+          { label: 'Heard any rumors?', response: 'Folk whisper the eastern caravans are running light of late — bandits on the Greymoor road, or worse. And a hooded sort\'s been asking after the Barrowfields. Bad business, that.' },
+          { label: 'Tell me about Dawnhold.', response: 'Oldest city in the realm, raised on the bones of three older ones. The High Quarter\'s all temples and gold; down here in the Lower we keep the songs and the secrets. You\'ll do fine if you mind your manners and your purse.' },
+          { label: 'Who are you?', response: 'Maren. My mother kept this bar, and hers before that. I\'ve poured for paupers and princes alike — and I remember every face that\'s tried to leave without paying.' },
+        ],
+      },
+    },
     { name: 'The Crownforge',    type: 'blacksmith', city: dawnhold._id, parent: marketQuarter._id, icon: '⚒️', description: 'Armorers to the royal guard. Waitlist measured in seasons.', npcName: 'Master Edran', npcRole: 'Royal Smith' },
     { name: 'Cathedral of Dawn', type: 'temple',     city: dawnhold._id, parent: highQuarter._id,   icon: '✨', description: 'Sunrise services that fill the nave with golden light.', npcName: 'High Cleric Yvanne', npcRole: 'High Cleric' },
     { name: 'The Grand Bazaar',  type: 'market',     city: dawnhold._id, parent: marketQuarter._id, icon: '🛒', allowPlayerThreads: true, description: 'If it exists, someone here sells it. If it doesn\'t, someone claims to.' },
