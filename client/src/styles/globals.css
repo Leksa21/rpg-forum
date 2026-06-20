@@ -2774,49 +2774,150 @@ a.db-hero-name:hover {
   margin-bottom: 0.5rem;
 }
 
+/* ── Place sections (Direction B: bento + feed) ───────────── */
+.af-section { margin-top: 1.6rem; }
+
+.af-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.af-section-label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 0.9rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.af-section-head .af-section-label { margin-bottom: 0; }
+.af-section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(201, 168, 76, 0.28), transparent);
+}
+
 .af-venue-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 1rem;
-  margin-top: 0.5rem;
 }
 
 .af-venue-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.35rem;
-  padding: 1.1rem 1.2rem;
+  gap: 0.4rem;
+  padding: 1.2rem 1.25rem 2.5rem;
   text-align: left;
   cursor: pointer;
-  border: 1px solid rgba(201, 168, 76, 0.18);
-  border-radius: 12px;
-  background: rgba(14, 14, 26, 0.55);
-  transition: transform 150ms ease, border-color 150ms ease, background 150ms ease;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  background:
+    radial-gradient(130% 90% at 0% 0%, color-mix(in oklab, var(--accent, #c9a84c) 13%, transparent), transparent 60%),
+    linear-gradient(180deg, rgba(22, 22, 38, 0.85), rgba(12, 12, 22, 0.9));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 10px 24px -16px rgba(0, 0, 0, 0.85);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
-
 .af-venue-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(201, 168, 76, 0.5);
-  background: rgba(20, 20, 36, 0.7);
+  transform: translateY(-3px);
+  border-color: color-mix(in oklab, var(--accent, #c9a84c) 55%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 18px 34px -18px rgba(0, 0, 0, 0.9);
 }
 
 .af-venue-icon {
-  font-size: 1.6rem;
+  font-size: 1.9rem;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
 }
-
 .af-venue-name {
   font-family: 'Cinzel', serif;
-  color: var(--gold, #c9a84c);
-  font-size: 1.05rem;
+  color: var(--accent, #c9a84c);
+  font-size: 1.08rem;
   letter-spacing: 0.02em;
 }
-
 .af-venue-desc {
   color: var(--text-muted);
   font-family: 'Crimson Text', serif;
   font-size: 0.92rem;
   line-height: 1.35;
+}
+.af-venue-go {
+  position: absolute;
+  left: 1.25rem;
+  bottom: 0.9rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: var(--accent, #c9a84c);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+.af-venue-card:hover .af-venue-go { opacity: 0.95; transform: translateX(0); }
+
+/* ── Happenings feed ──────────────────────────────────────── */
+.af-feed { display: flex; flex-direction: column; gap: 0.6rem; }
+
+.af-feed-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(20, 20, 34, 0.6), rgba(12, 12, 20, 0.6));
+  cursor: pointer;
+  transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+}
+.af-feed-row:hover {
+  transform: translateX(2px);
+  border-color: rgba(201, 168, 76, 0.35);
+  background: linear-gradient(180deg, rgba(26, 26, 44, 0.75), rgba(16, 16, 28, 0.75));
+}
+
+.af-feed-avatar {
+  flex: none;
+  width: 2.6rem;
+  height: 2.6rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.3rem;
+  border: 1px solid;
+  border-radius: 10px;
+}
+.af-feed-main { flex: 1; min-width: 0; }
+.af-feed-title {
+  font-family: 'Cinzel', serif;
+  font-size: 1rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.af-feed-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.2rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-family: 'Crimson Text', serif;
+}
+.af-feed-venue { color: var(--gold, #c9a84c); opacity: 0.85; }
+.af-feed-side { flex: none; }
+.af-feed-replies {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  padding: 0.2rem 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 999px;
 }
 
 /* ── Breadcrumb ───────────────────────────────────────────── */

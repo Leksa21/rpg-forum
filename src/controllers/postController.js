@@ -46,6 +46,7 @@ const getPosts = async (req, res) => {
       Post.find(filter)
         .populate('character', 'name avatar class race level')
         .populate('author', 'username')
+        .populate('subLocation', 'name')
         .sort({ isPinned: -1, createdAt: -1 })
         .skip(skip)
         .limit(Number(limit))

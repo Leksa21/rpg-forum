@@ -127,105 +127,113 @@ export default function AreaForum() {
                   who stand within it. Travel here to read its forum and join what unfolds.
                 </p>
               </div>
-            ) : topVenues.length > 0 ? (
-              <div className="af-venue-grid">
-                {topVenues.map(v => (
-                  <button
-                    key={v._id}
-                    className="af-venue-card"
-                    onClick={() => navigate(`/world/areas/${id}/venue/${v._id}`)}
-                  >
-                    <span className="af-venue-icon">{v.icon}</span>
-                    <span className="af-venue-name">{v.name}</span>
-                    {v.description && <span className="af-venue-desc">{v.description}</span>}
-                  </button>
-                ))}
-              </div>
             ) : (
               <>
-                <div className="af-posts-header">
-                  <span className="af-posts-count">{total} {total === 1 ? 'post' : 'posts'}</span>
-                  {canWrite && (
-                    <button
-                      className="af-write-btn"
-                      style={{ '--accent': accent }}
-                      onClick={() => navigate('/forum/new', { state: { locationId: id, locationName: location.name } })}
-                    >
-                      ✍ Write Here
-                    </button>
-                  )}
-                </div>
+                {topVenues.length > 0 && (
+                  <section className="af-section">
+                    <h2 className="af-section-label">⌖ Where to go</h2>
+                    <div className="af-venue-grid">
+                      {topVenues.map(v => (
+                        <button
+                          key={v._id}
+                          className="af-venue-card"
+                          style={{ '--accent': accent }}
+                          onClick={() => navigate(`/world/areas/${id}/venue/${v._id}`)}
+                        >
+                          <span className="af-venue-icon">{v.icon}</span>
+                          <span className="af-venue-name">{v.name}</span>
+                          {v.description && <span className="af-venue-desc">{v.description}</span>}
+                          <span className="af-venue-go">Enter →</span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                )}
 
-                {postsLoading
-                  ? <p style={{ color: 'var(--text-muted)', padding: '2rem 0' }}>Loading posts…</p>
-                  : posts.length === 0
-                    ? (
-                      <div className="af-empty">
-                        <p>No tales have been told here yet.</p>
-                        {canWrite
-                          ? <button
-                              className="btn-primary"
-                              style={{ width: 'auto', padding: '0.6rem 1.5rem', marginTop: '1rem' }}
-                              onClick={() => navigate('/forum/new', { state: { locationId: id, locationName: location.name } })}
-                            >
-                              Be the first to write
-                            </button>
-                          : <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>Only the keepers of this place may open new threads here.</p>
-                        }
-                      </div>
-                    )
-                    : <div className="af-post-list">
-                        {posts.map(p => {
-                          const classColor = CLASS_COLORS[p.character?.class] || 'var(--gold)';
-                          return (
-                            <div
-                              key={p._id}
-                              className="af-post-row"
-                              onClick={() => navigate(`/forum/${p._id}`)}
-                              role="link"
-                              tabIndex={0}
-                              onKeyDown={e => e.key === 'Enter' && navigate(`/forum/${p._id}`)}
-                            >
-                              <div className="af-post-avatar" style={{ background: `${classColor}22`, borderColor: classColor }}>
-                                {p.character?.avatar || '?'}
-                              </div>
-                              <div className="af-post-info">
-                                <div className="af-post-title">{p.isPinned && <span className="af-pin">📌 </span>}{p.title}</div>
-                                <div className="af-post-meta">
-                                  {p.character?._id ? (
-                                    <Link
-                                      to={`/character/${p.character._id}`}
-                                      className="af-char-link"
-                                      style={{ color: classColor }}
-                                      onClick={e => e.stopPropagation()}
+                <section className="af-section">
+                  <div className="af-section-head">
+                    <h2 className="af-section-label">✦ What’s happening</h2>
+                    {topVenues.length === 0 && canWrite && (
+                      <button
+                        className="af-write-btn"
+                        style={{ '--accent': accent }}
+                        onClick={() => navigate('/forum/new', { state: { locationId: id, locationName: location.name } })}
+                      >
+                        ✍ Write Here
+                      </button>
+                    )}
+                  </div>
+
+                  {postsLoading
+                    ? <p style={{ color: 'var(--text-muted)', padding: '2rem 0' }}>Loading…</p>
+                    : posts.length === 0
+                      ? (
+                        <div className="af-empty">
+                          {topVenues.length > 0
+                            ? <p>Nothing stirring yet. Step into a district to begin a tale.</p>
+                            : <>
+                                <p>No tales have been told here yet.</p>
+                                {canWrite
+                                  ? <button
+                                      className="btn-primary"
+                                      style={{ width: 'auto', padding: '0.6rem 1.5rem', marginTop: '1rem' }}
+                                      onClick={() => navigate('/forum/new', { state: { locationId: id, locationName: location.name } })}
                                     >
-                                      {p.character.name}
-                                    </Link>
-                                  ) : (
-                                    <span style={{ color: classColor }}>{p.character?.name || p.author?.username}</span>
-                                  )}
-                                  <span className="af-dot">·</span>
-                                  <span>{timeAgo(p.createdAt)}</span>
-                                  <span className="af-dot">·</span>
-                                  <span>{p.commentCount ?? 0} replies</span>
-                                  <span className="af-dot">·</span>
-                                  <span>{p.views} views</span>
+                                      Be the first to write
+                                    </button>
+                                  : <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>Only the keepers of this place may open new threads here.</p>
+                                }
+                              </>
+                          }
+                        </div>
+                      )
+                      : <div className="af-feed">
+                          {posts.map(p => {
+                            const classColor = CLASS_COLORS[p.character?.class] || 'var(--gold)';
+                            return (
+                              <div
+                                key={p._id}
+                                className="af-feed-row"
+                                onClick={() => navigate(`/forum/${p._id}`)}
+                                role="link"
+                                tabIndex={0}
+                                onKeyDown={e => e.key === 'Enter' && navigate(`/forum/${p._id}`)}
+                              >
+                                <div className="af-feed-avatar" style={{ background: `${classColor}22`, borderColor: classColor }}>
+                                  {p.character?.avatar || '?'}
+                                </div>
+                                <div className="af-feed-main">
+                                  <div className="af-feed-title">{p.isPinned && <span className="af-pin">📌 </span>}{p.title}</div>
+                                  <div className="af-feed-meta">
+                                    {p.character?._id ? (
+                                      <Link to={`/character/${p.character._id}`} className="af-char-link" style={{ color: classColor }} onClick={e => e.stopPropagation()}>
+                                        {p.character.name}
+                                      </Link>
+                                    ) : (
+                                      <span style={{ color: classColor }}>{p.character?.name || p.author?.username}</span>
+                                    )}
+                                    {p.subLocation?.name && <><span className="af-dot">·</span><span className="af-feed-venue">{p.subLocation.name}</span></>}
+                                    <span className="af-dot">·</span>
+                                    <span>{timeAgo(p.createdAt)}</span>
+                                  </div>
+                                </div>
+                                <div className="af-feed-side">
+                                  <span className="af-feed-replies">💬 {p.commentCount ?? 0}</span>
                                 </div>
                               </div>
-                              <div className="af-post-category">{p.category}</div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                }
+                            );
+                          })}
+                        </div>
+                  }
 
-                {totalPages > 1 && (
-                  <div className="pm-pagination">
-                    <button className="pm-page-btn" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>← Prev</button>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Page {page} / {totalPages}</span>
-                    <button className="pm-page-btn" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next →</button>
-                  </div>
-                )}
+                  {totalPages > 1 && (
+                    <div className="pm-pagination">
+                      <button className="pm-page-btn" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>← Prev</button>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Page {page} / {totalPages}</span>
+                      <button className="pm-page-btn" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next →</button>
+                    </div>
+                  )}
+                </section>
               </>
             )}
           </div>
